@@ -8,195 +8,24 @@ const APP_VERSION = "v0.0.6";
 // --- Application State ---
 const defaultState = {
   activeProfile: 'parent', // 'parent' | 'child_independent' | 'child_managed'
-  currentFamily: 'Familie Müller',
+  currentFamily: 'Meine Familie',
   googleCalendarSynced: true,
   lastGoogleSync: 'Vor 5 Minuten',
 
   // Family Members Management (Addable/Editable)
-  members: [
-    { id: 'parent', name: 'Tom (Vater)', role: 'parent', avatar: '👨', age: 41, isParent: true },
-    { id: 'mother', name: 'Sarah (Mutter)', role: 'parent', avatar: '👩', age: 39, isParent: true },
-    { id: 'child_independent', name: 'Nick (Sohn)', role: 'child_independent', avatar: '👦', age: 11, isParent: false, hasOwnDevice: true, permissions: { canSendAdHocDirectly: true, requiresWishApproval: true, maxBudget: '15 €' } },
-    { id: 'child_managed', name: 'Maya (Tochter)', role: 'child_managed', avatar: '👧', age: 7, isParent: false, hasOwnDevice: false, permissions: { canSendAdHocDirectly: false, requiresWishApproval: true, maxBudget: '10 €' } }
-  ],
+  members: [],
 
-  // Ad-Hoc Requests ("Wer hat JETZT Lust?") with Targeted Audience
-  adHocRequests: [
-    {
-      id: 'adhoc-1',
-      creator: 'Nick (11 J.)',
-      avatar: '👦',
-      activity: '⚽ Fußball spielen & Bolzen',
-      time: 'Heute 15:00 Uhr',
-      location: 'Bolzplatz Parkstraße',
-      targetAudience: 'Nur Jungs (Nick, Jonas, Ben)',
-      cost: 'Kostenlos',
-      parentPresent: 'Ohne Eltern (Kinder unter sich)',
-      status: 'Aktiv',
-      rsvps: [
-        { family: 'Familie Weber', name: 'Jonas', status: 'Dabei! 🎉', avatar: '👦' },
-        { family: 'Familie Fischer', name: 'Ben', status: 'Ausstehend...', avatar: '👦' }
-      ]
-    },
-    {
-      id: 'adhoc-2',
-      creator: 'Maya (7 J.) - via Tom',
-      avatar: '👧',
-      activity: '🍦 Eis essen & Spielplatz',
-      time: 'Heute 16:30 Uhr',
-      location: 'Eiscafé Venezia',
-      targetAudience: 'Nur Mädchen (Maya, Emma)',
-      cost: 'ca. 4 € / Kind',
-      parentPresent: 'Mit Eltern-Begleitung',
-      status: 'Aktiv',
-      rsvps: [
-        { family: 'Familie Weber', name: 'Emma', status: 'Ab 17 Uhr dabei!', avatar: '👧' }
-      ]
-    }
-  ],
+  // Ad-Hoc Requests ("Wer hat JETZT Lust?")
+  adHocRequests: [],
 
-  // Recurring Weekly Hobbies & Internal/External Driver Logistics
-  recurringHobbies: [
-    {
-      id: 'hob-1',
-      child: 'Nick',
-      avatar: '👦',
-      title: '⚽ Fußball-Training',
-      schedule: 'Jeden Di & Do, 17:00 - 18:30 Uhr',
-      location: 'Sportpark Ost',
-      bringDriver: '👨 Tom (Papa)',
-      getDriver: '👩 Sarah (Mama)',
-      parentPresent: 'Ohne Eltern (Trainer schaut)',
-      status: 'Familien-intern aufgeteilt ✅'
-    },
-    {
-      id: 'hob-2',
-      child: 'Maya',
-      avatar: '👧',
-      title: '💃 Tanzen & Ballett',
-      schedule: 'Jeden Donnerstag, 15:30 - 16:30 Uhr',
-      location: 'Tanzstudio Motion',
-      bringDriver: '👨 Tom (Papa)',
-      getDriver: '👩 Mutter von Emma (Fam. Weber)',
-      parentPresent: 'Mit Eltern-Begleitung',
-      status: 'Gemischter Hol/Bringdienst ✅'
-    },
-    {
-      id: 'hob-3',
-      child: 'Nick & Maya',
-      avatar: '👦👧',
-      title: '🏊 Schwimmverein (Kinderschwimmen)',
-      schedule: 'Jeden Freitag, 16:00 - 17:30 Uhr',
-      location: 'Stadtbad Aqua',
-      bringDriver: '🏡 Fam. Fischer',
-      getDriver: '⚠️ Offen (Wer holt ab?)',
-      parentPresent: 'Mit Eltern-Begleitung',
-      status: 'Holdienst offen'
-    }
-  ],
+  // Family Wishes (Shared bucket)
+  wishes: [],
 
-  // Kids Wishlist with Parent Approval Status
-  wishes: [
-    {
-      id: 'wish-1',
-      child: 'Nick',
-      avatar: '👦',
-      category: '🏊 Schwimmbad / Rutschen',
-      desc: 'Wollte unbedingt mal wieder in die Wasserwelt mit Sprungturm!',
-      cost: '12 € Eintritt',
-      status: 'Genehmigt',
-      dateAdded: 'Gestern'
-    },
-    {
-      id: 'wish-2',
-      child: 'Maya',
-      avatar: '👧',
-      category: '🎬 Kino / Filmabend',
-      desc: 'Neuer Animationsfilm im Kinopolis',
-      cost: '9,50 € Ticket',
-      status: 'Ausstehend',
-      dateAdded: 'Vor 2 Tagen'
-    },
-    {
-      id: 'wish-3',
-      child: 'Nick',
-      avatar: '👦',
-      category: '🎲 Brettspiel-Nachmittag',
-      desc: 'Siedler von Catan mit Freunden spielen',
-      cost: 'Kostenlos',
-      status: 'Genehmigt',
-      dateAdded: 'Heute'
-    }
-  ],
+  // Recurring Hobbies / Activities
+  recurringHobbies: [],
 
-  // Wish Matches with Friend Families
-  wishMatches: [
-    {
-      id: 'match-1',
-      wishCategory: '🏊 Schwimmbad',
-      ourChild: 'Nick (Familie Müller)',
-      friendChild: 'Jonas (Familie Weber)',
-      recommendation: 'Jonas hat gestern auch "Schwimmbad" gewünscht. Wollt ihr Samstag zusammen gehen?'
-    }
-  ],
-
-  // Calendar Events & Carpooling & Optional Costs
-  calendarEvents: [
-    {
-      id: 'evt-1',
-      title: '⚽ Fußball-Punktspiel',
-      forMember: 'Nick',
-      time: 'Samstag, 10:00 - 12:00 Uhr',
-      location: 'Sportpark Ost',
-      cost: 'Kostenlos',
-      parentPresent: 'Mit Eltern-Begleitung (Tom & Sarah)',
-      carpool: '🚗 Hin: Tom (Papa) / 🚗 Rück: Fam. Weber',
-      source: 'Local',
-      status: 'Bestätigt'
-    },
-    {
-      id: 'evt-gcal-1',
-      title: '🏫 Schulfest & Flohmarkt (Google Calendar)',
-      forMember: 'Familie',
-      time: 'Freitag, 14:00 - 17:00 Uhr',
-      location: 'Grundschule Goethestraße',
-      cost: 'Kostenlos',
-      parentPresent: 'Mit Eltern-Begleitung',
-      carpool: '🚗 Keine Fahrt nötig',
-      source: 'Google',
-      status: 'Google Sync 🔄'
-    },
-    {
-      id: 'evt-2',
-      title: '🎂 Geburtstagsparty von Emma',
-      forMember: 'Maya',
-      time: 'Sonntag, 14:30 - 18:00 Uhr',
-      location: 'Familie Weber Zuhause',
-      cost: 'Geschenk ~15 €',
-      parentPresent: 'Ohne Eltern',
-      carpool: '🚗 Hin: Tom (Papa) / 🚗 Rück: Sarah (Mama)',
-      source: 'Local',
-      status: 'Bestätigt'
-    }
-  ],
-
-  // Connected Families
-  connectedFamilies: [
-    {
-      id: 'fam-weber',
-      name: 'Familie Weber',
-      members: 'Julia & Marc (Eltern), Jonas (11 J.), Emma (7 J.)',
-      status: 'Verknüpft ✅',
-      avatar: '🏡'
-    },
-    {
-      id: 'fam-fischer',
-      name: 'Familie Fischer',
-      members: 'Lars (Vater), Ben (10 J.)',
-      status: 'Verknüpft ✅',
-      avatar: '🏡'
-    }
-  ]
+  // Calendar Events
+  calendarEvents: []
 };
 
 // --- Supabase Cloud & Live Sync Engine ---
@@ -233,30 +62,21 @@ async function initSupabase() {
     return;
   }
   
-  // Hide Auth Overlay if logged in
+  // Hide Auth, Show Main App
   document.getElementById('auth-overlay').style.display = 'none';
 
   // 1. Get current user profile and family
   const { data: userProfile } = await db.from('users').select('*').eq('auth_id', session.user.id).single();
   
   if (userProfile) {
+    console.log('User profile loaded, updating UI...', userProfile);
+    state.currentFamily = userProfile.family_id || 'Meine Familie';
+    state.activeProfile = userProfile.id; // User UUID from our DB
     currentFamilyId = userProfile.family_id;
-    // Set active profile based on logged-in user
-    state.activeProfile = userProfile.id; // Switch active profile to real user ID
     
     // Check if they are admin
     if (userProfile.is_admin) {
        console.log("Logged in as Family Admin");
-    }
-  } else {
-    // Fallback if no user profile is found but auth exists
-    console.warn("User profile not linked. Proceeding with default logic.");
-    let { data: families } = await db.from('families').select('*').eq('invite_code', 'MUELLER-2026-FP').limit(1);
-    if (!families || families.length === 0) {
-      const { data: newFam } = await db.from('families').insert([{ name: 'Familie Müller', invite_code: 'MUELLER-2026-FP' }]).select();
-      if (newFam) currentFamilyId = newFam[0].id;
-    } else {
-      currentFamilyId = families[0].id;
     }
   }
 
@@ -271,15 +91,36 @@ async function initSupabase() {
 
 
 async function fetchCloudData() {
-  const [adhocRes, wishesRes, hobbiesRes] = await Promise.all([
+  const [adhocRes, wishesRes, hobbiesRes, membersRes] = await Promise.all([
     db.from('ad_hoc_requests').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
     db.from('wishes').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
-    db.from('recurring_hobbies').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false })
+    db.from('recurring_hobbies').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
+    db.from('users').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: true })
   ]);
   
+  if (membersRes.data && membersRes.data.length > 0) {
+    state.members = membersRes.data.map(u => ({
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      avatar: u.is_parent ? '👨' : '👦',
+      isParent: u.is_parent
+    }));
+    
+    // Set active profile if parent logged in
+    if (!state.members.find(m => m.id === state.activeProfile) && state.members.length > 0) {
+       state.activeProfile = state.members[0].id;
+    }
+  }
+
   if (adhocRes.data && adhocRes.data.length > 0) state.adHocRequests = adhocRes.data.map(mapAdHocFromDB);
+  else state.adHocRequests = [];
+  
   if (wishesRes.data && wishesRes.data.length > 0) state.wishes = wishesRes.data.map(mapWishFromDB);
+  else state.wishes = [];
+  
   if (hobbiesRes.data && hobbiesRes.data.length > 0) state.recurringHobbies = hobbiesRes.data.map(mapHobbyFromDB);
+  else state.recurringHobbies = [];
   
   renderApp();
 }
@@ -373,6 +214,57 @@ function setAppTheme(themeMode) {
 const savedTheme = safeStorageGet('familyplaner_theme') || 'auto';
 setTimeout(() => setAppTheme(savedTheme), 100);
 
+// --- Logging & Debugging System ---
+let errorLog = [];
+function addErrorLog(msg) {
+  errorLog.push(`[${new Date().toISOString()}] ${msg}`);
+  if (errorLog.length > 50) errorLog.shift();
+}
+window.addEventListener('error', e => addErrorLog(`ERROR: ${e.message} at ${e.filename}:${e.lineno}`));
+window.addEventListener('unhandledrejection', e => addErrorLog(`PROMISE_REJECT: ${e.reason}`));
+
+function renderSettings() {
+  const container = document.getElementById('settings-content');
+  if (!container) return;
+  
+  const familyCode = state.currentFamily || 'Laden...';
+  
+  container.innerHTML = `
+    <div class="card">
+      <h3>Benutzerkonto</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Du bist eingeloggt als Elternteil.</p>
+      <button class="btn btn-outline full-width" onclick="logout()">Abmelden</button>
+    </div>
+
+    <div class="card" style="margin-top: 15px;">
+      <h3>Familien-Verwaltung</h3>
+      <p style="font-size:12px; margin-bottom:10px;">Dein aktueller Einladungscode für andere Familienmitglieder:</p>
+      <div style="background:var(--bg-app); padding:10px; border-radius:8px; text-align:center; font-family:monospace; font-size:18px; font-weight:bold; letter-spacing:2px; margin-bottom:15px;">
+        ${familyCode}
+      </div>
+      <button class="btn btn-ghost full-width" onclick="alert('Code kopiert (Demo)')">Code kopieren</button>
+    </div>
+    
+    <div class="card" style="margin-top: 15px;">
+      <h3>Debug & Fehler</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Wenn die App Fehler hat, kopiere das Log und schicke es an den Entwickler.</p>
+      <button class="btn btn-outline full-width" onclick="copyErrorLog()">Fehlerprotokoll kopieren</button>
+    </div>
+  `;
+}
+
+function copyErrorLog() {
+  const logStr = errorLog.join('\n');
+  const navData = `UserAgent: ${navigator.userAgent}\nStorage Support: ${!!window.localStorage}`;
+  const fullLog = navData + "\n---\n" + (logStr || 'Keine Fehler geloggt.');
+  
+  navigator.clipboard.writeText(fullLog).then(() => {
+    showToast('Fehlerprotokoll kopiert!');
+  }).catch(() => {
+    alert('Kopieren fehlgeschlagen. Hier ist dein Log:\n\n' + fullLog);
+  });
+}
+
 // DOM Elements
 const tabs = document.querySelectorAll('.tab-content');
 const navButtons = document.querySelectorAll('.nav-bar button');
@@ -395,6 +287,7 @@ function renderApp() {
 // Render Header & Profile Badge
 function renderHeaderAndProfile() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (!curMember) return;
   document.getElementById('active-avatar').textContent = curMember.avatar;
   document.getElementById('active-profile-name').textContent = curMember.name;
   document.getElementById('active-profile-role').textContent = curMember.isParent ? 'Eltern-Modus' : (curMember.hasOwnDevice ? 'Eigener Account' : 'Verwaltet');
@@ -658,6 +551,9 @@ function cancelAdHocByParent(reqId) {
 // Render Recurring Hobbies & Internal/External Driver Logistics
 function renderRecurringHobbies() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (!curMember) return;
+  
+  const banner = document.getElementById('mode-banner');
   const container = document.getElementById('recurring-hobbies-list');
   
   if (state.recurringHobbies.length === 0) {
