@@ -417,6 +417,7 @@ function openAddMemberModal() {
 // Render Dashboard View
 function renderDashboard() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (!curMember) return;
 
   // Pending Wish Approvals (Only visible to parents)
   const approvalWidget = document.getElementById('parent-approval-widget');
@@ -613,6 +614,7 @@ function renderRecurringHobbies() {
 // Render Wishes Section with Approval Actions
 function renderWishesList() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (!curMember) return;
   const matchesContainer = document.getElementById('wish-matches-container');
   matchesContainer.innerHTML = state.wishMatches.map(m => `
     <div class="match-card">
@@ -700,6 +702,8 @@ function filterCalendar(member) {
 }
 
 function renderCalendarEvents() {
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (!curMember) return;
   const container = document.getElementById('calendar-event-list');
   const filtered = state.calendarEvents.filter(e => {
     if (calendarFilter === 'all') return true;
@@ -970,6 +974,7 @@ async function handleCreateWish(event) {
   const desc = document.getElementById('wish-desc').value;
   const cost = document.getElementById('wish-cost').value;
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (!curMember) return;
 
   const status = curMember.isParent ? 'approved' : 'pending';
 
@@ -1250,7 +1255,6 @@ async function logout() {
 // Call these at the VERY END of the file to guarantee all 'let' and 'const' variables
 // are out of the Temporal Dead Zone.
 initSupabase();
-renderApp();
 
 setTimeout(() => {
   showToast('✨ Wilkommen bei FamilyPlaner! Jonas (Fam. Weber) möchte auch schwimmen gehen!');
