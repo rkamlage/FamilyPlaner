@@ -7,6 +7,8 @@ const state = {
   // Profiles in current household
   activeProfile: 'parent', // 'parent' | 'child_independent' | 'child_managed'
   currentFamily: 'Familie Müller',
+  googleCalendarSynced: true,
+  lastGoogleSync: 'Vor 5 Minuten',
   
   profiles: {
     parent: {
@@ -76,6 +78,43 @@ const state = {
     }
   ],
 
+  // Recurring Weekly Hobbies & Driver Logistics
+  recurringHobbies: [
+    {
+      id: 'hob-1',
+      child: 'Nick',
+      avatar: '👦',
+      title: '⚽ Fußball-Training',
+      schedule: 'Jeden Di & Do, 17:00 - 18:30 Uhr',
+      location: 'Sportpark Ost',
+      bringDriver: 'Fam. Müller (Wir)',
+      getDriver: 'Fam. Weber',
+      status: 'Fahrten aufgeteilt ✅'
+    },
+    {
+      id: 'hob-2',
+      child: 'Maya',
+      avatar: '👧',
+      title: '🎻 Geigenunterricht',
+      schedule: 'Jeden Mittwoch, 15:30 - 16:15 Uhr',
+      location: 'Musikschule Stadtmitte',
+      bringDriver: 'Fam. Müller (Wir)',
+      getDriver: 'Fam. Müller (Wir)',
+      status: 'Fahrten geregelt ✅'
+    },
+    {
+      id: 'hob-3',
+      child: 'Nick & Maya',
+      avatar: '👦👧',
+      title: '🏊 Schwimmverein (Kinderschwimmen)',
+      schedule: 'Jeden Freitag, 16:00 - 17:30 Uhr',
+      location: 'Stadtbad Aqua',
+      bringDriver: 'Fam. Fischer',
+      getDriver: 'Offen (Wer holt ab?) ⚠️',
+      status: 'Holdienst offen'
+    }
+  ],
+
   // Kids Wishlist with Parent Approval Status
   wishes: [
     {
@@ -121,7 +160,7 @@ const state = {
     }
   ],
 
-  // Calendar Events & Carpooling & Optional Costs
+  // Calendar Events & Carpooling & Optional Costs (Google Synced & Local)
   calendarEvents: [
     {
       id: 'evt-1',
@@ -131,7 +170,19 @@ const state = {
       location: 'Sportpark Ost',
       cost: 'Kostenlos',
       carpool: '🚗 Hin: Fam. Müller / 🚗 Rück: Fam. Weber',
+      source: 'Local',
       status: 'Bestätigt'
+    },
+    {
+      id: 'evt-gcal-1',
+      title: '🏫 Schulfest & Flohmarkt (Google Calendar)',
+      forMember: 'Familie',
+      time: 'Freitag, 14:00 - 17:00 Uhr',
+      location: 'Grundschule Goethestraße',
+      cost: 'Kostenlos',
+      carpool: '🚗 Keine Fahrt nötig',
+      source: 'Google',
+      status: 'Google Sync 🔄'
     },
     {
       id: 'evt-2',
@@ -141,17 +192,8 @@ const state = {
       location: 'Familie Weber Zuhause',
       cost: 'Geschenk ~15 €',
       carpool: '🚗 Bringt & holt Fam. Müller',
+      source: 'Local',
       status: 'Bestätigt'
-    },
-    {
-      id: 'evt-3',
-      title: '🏊 Gemeinsamer Schwimmbad-Ausflug',
-      forMember: 'Nick & Maya',
-      time: 'Nächsten Mittwoch, 15:00 Uhr',
-      location: 'Hallenbad Stadtmitte',
-      cost: '12 € / Person',
-      carpool: '🚗 Offen (Wer kann fahren?)',
-      status: 'Geplant (Wish Match)'
     }
   ],
 
@@ -189,6 +231,7 @@ function renderApp() {
   renderDashboard();
   renderAdHocList();
   renderWishesList();
+  renderRecurringHobbies();
   renderCalendarEvents();
   renderPermissions();
   renderConnectedFamilies();
@@ -209,7 +252,7 @@ function renderHeaderAndProfile() {
   if (state.activeProfile === 'parent') {
     banner.className = 'mode-banner';
     bannerTitle.textContent = '🛡️ Eltern-Supervision aktiv';
-    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Anfragen, Wunsch-Freigaben & Kosten.';
+    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Wunsch-Freigaben, Spontan-Veto & Google Sync.';
   } else if (state.activeProfile === 'child_independent') {
     banner.className = 'mode-banner child-mode';
     bannerTitle.textContent = '👦 Nicks Kind-Modus (Eigenes Handy)';
@@ -259,6 +302,22 @@ function renderDashboard() {
     approvalWidget.style.display = 'none';
   }
 
+  // Dashboard Carpool Driver Logistics Widget
+  const carpoolContainer = document.getElementById('dashboard-carpool-list');
+  carpoolContainer.innerHTML = state.recurringHobbies.map(h => `
+    <div class="list-item">
+      <div class="list-item-left">
+        <span class="item-avatar">${h.avatar}</span>
+        <div>
+          <div class="item-title">${h.title}</div>
+          <div class="item-sub">⏰ ${h.schedule}</div>
+          <div class="item-sub" style="color:var(--primary); font-weight:600;">🚗 Hin: ${h.bringDriver} | 🚗 Rück: ${h.getDriver}</div>
+        </div>
+      </div>
+      <span class="item-status-pill ${h.status.includes('offen') ? 'pending' : 'accepted'}">${h.status}</span>
+    </div>
+  `).join('');
+
   // Ad-hoc Summary List
   const adhocContainer = document.getElementById('dashboard-adhoc-list');
   document.getElementById('adhoc-count-badge').textContent = `${state.adHocRequests.length} Aktiv`;
@@ -280,24 +339,12 @@ function renderDashboard() {
     </div>
   `).join('');
 
-  // Wish Matches
-  const wishMatchContainer = document.getElementById('dashboard-wish-matches');
-  wishMatchContainer.innerHTML = state.wishMatches.map(m => `
-    <div class="match-card">
-      <div>
-        <strong style="font-size:13px; color: var(--secondary)">🎯 ${m.wishCategory}</strong>
-        <p style="font-size:11px; color: var(--text-muted); margin-top:2px;">${m.recommendation}</p>
-      </div>
-      <button class="btn btn-sm btn-primary" onclick="createMatchEvent('${m.id}')">Termin ausmachen</button>
-    </div>
-  `).join('');
-
   // Today's Events
   const todayContainer = document.getElementById('dashboard-today-list');
   todayContainer.innerHTML = state.calendarEvents.map(evt => `
     <div class="list-item">
       <div class="list-item-left">
-        <span class="item-avatar">📅</span>
+        <span class="item-avatar">${evt.source === 'Google' ? '🗓️' : '📅'}</span>
         <div>
           <div class="item-title">${evt.title}</div>
           <div class="item-sub">👤 ${evt.forMember} • ⏰ ${evt.time}</div>
@@ -310,7 +357,7 @@ function renderDashboard() {
   `).join('');
 }
 
-// Render Ad-Hoc Section
+// Render Ad-Hoc Section (With Parent Cancel Veto Option)
 function renderAdHocList() {
   const container = document.getElementById('adhoc-full-list');
   container.innerHTML = state.adHocRequests.map(req => `
@@ -344,7 +391,53 @@ function renderAdHocList() {
 
       <div style="display:flex; gap:8px;">
         <button class="btn btn-primary full-width" onclick="respondAdHoc('${req.id}', 'Ich bin dabei!')">👍 Zusage senden</button>
-        <button class="btn btn-secondary full-width" onclick="respondAdHoc('${req.id}', 'Leider keine Zeit')">❌ Absagen</button>
+        
+        ${state.activeProfile === 'parent' ? `
+          <button class="btn-cancel-adhoc" onclick="cancelAdHocByParent('${req.id}')">🚫 Stornieren (Eltern-Veto)</button>
+        ` : `
+          <button class="btn btn-secondary full-width" onclick="respondAdHoc('${req.id}', 'Leider keine Zeit')">❌ Absagen</button>
+        `}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Parent Veto / Cancel Ad-Hoc
+function cancelAdHocByParent(reqId) {
+  const req = state.adHocRequests.find(r => r.id === reqId);
+  if (req) {
+    state.adHocRequests = state.adHocRequests.filter(r => r.id !== reqId);
+    renderApp();
+    showToast(`🚫 Spontan-Anfrage "${req.activity}" durch Eltern storniert.`);
+  }
+}
+
+// Render Recurring Hobbies & Driver Logistics
+function renderRecurringHobbies() {
+  const container = document.getElementById('recurring-hobbies-list');
+  container.innerHTML = state.recurringHobbies.map(h => `
+    <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+      <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+        <div class="list-item-left">
+          <span class="item-avatar">${h.avatar}</span>
+          <div>
+            <div class="item-title">${h.title} (${h.child})</div>
+            <div class="item-sub">🗓️ ${h.schedule} • 📍 ${h.location}</div>
+          </div>
+        </div>
+        <span class="recurring-badge">Wöchentlich</span>
+      </div>
+
+      <div style="width:100%; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border-color); font-size:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="color:var(--text-muted)">Hol- & Bringdienst:</span>
+          <div style="font-weight:700; color:var(--text-main); margin-top:2px;">
+            🚗 Hin: ${h.bringDriver} | 🚗 Rück: ${h.getDriver}
+          </div>
+        </div>
+        ${state.activeProfile === 'parent' ? `
+          <button class="btn btn-ghost btn-sm" onclick="showToast('🚗 Fahrgemeinschaft für ${h.title} angepasst!')">Bearbeiten</button>
+        ` : ''}
       </div>
     </div>
   `).join('');
@@ -414,6 +507,16 @@ function declineWish(wishId) {
   }
 }
 
+// Google Calendar Trigger Simulation
+function triggerGoogleSync() {
+  showToast('🔄 Google Kalender wird synchronisiert...');
+  setTimeout(() => {
+    state.lastGoogleSync = 'Gerade eben';
+    showToast('✅ Google Kalender erfolgreich abgeglichen! 14 Termine aktualisiert.');
+    renderApp();
+  }, 1200);
+}
+
 // Render Calendar & Filter
 let calendarFilter = 'all';
 
@@ -436,7 +539,7 @@ function renderCalendarEvents() {
     <div class="section-card">
       <div class="card-header">
         <h3>${evt.title}</h3>
-        <span class="badge green">${evt.status}</span>
+        <span class="badge ${evt.source === 'Google' ? '' : 'green'}">${evt.status}</span>
       </div>
       <div style="font-size:12px; color:var(--text-muted); display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">
         <div>👤 <strong>Für:</strong> ${evt.forMember}</div>
@@ -574,12 +677,44 @@ function openWishModal() {
   document.getElementById('modal-wish').classList.add('active');
 }
 
+function openHobbyModal() {
+  document.getElementById('modal-hobby').classList.add('active');
+}
+
 function showConnectModal() {
   document.getElementById('modal-connect').classList.add('active');
 }
 
 function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('active');
+}
+
+// --- Hobby Creation ---
+function handleCreateHobby(event) {
+  event.preventDefault();
+  const child = document.getElementById('hobby-child-select').value;
+  const title = document.getElementById('hobby-title').value;
+  const time = document.getElementById('hobby-time').value;
+  const location = document.getElementById('hobby-location').value;
+  const bring = document.getElementById('hobby-bring').value;
+  const get = document.getElementById('hobby-get').value;
+
+  const newHobby = {
+    id: `hob-${Date.now()}`,
+    child: child,
+    avatar: child === 'Nick' ? '👦' : '👧',
+    title: title,
+    schedule: time,
+    location: location,
+    bringDriver: bring,
+    getDriver: get,
+    status: (bring.includes('Offen') || get.includes('Offen')) ? 'Fahrt offen ⚠️' : 'Fahrten geregelt ✅'
+  };
+
+  state.recurringHobbies.unshift(newHobby);
+  closeModal('modal-hobby');
+  renderApp();
+  showToast(`🏆 Wöchentliches Hobby "${title}" gespeichert!`);
 }
 
 // --- Ad-Hoc Creation & Response ---
@@ -667,6 +802,7 @@ function createMatchEvent(matchId) {
       location: 'Wasserwelt Stadt',
       cost: '12 € / Person',
       carpool: '🚗 Fam. Müller fährt hin / Fam. Weber holt ab',
+      source: 'Local',
       status: 'Bestätigt'
     });
     showToast(`🎉 Gemeinsamer Termin im Kalender angelegt!`);

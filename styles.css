@@ -222,7 +222,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .mode-banner.child-mode {
@@ -243,6 +243,64 @@ body {
 .banner-text p {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+/* Google Calendar Sync Status Bar */
+.sync-status-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sync-status-box:hover {
+  border-color: var(--primary);
+}
+
+.sync-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gcal-icon {
+  font-size: 20px;
+}
+
+.sync-info strong {
+  font-size: 12px;
+  display: block;
+}
+
+.sync-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.sync-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+.sync-badge.active {
+  background: var(--secondary-light);
+  color: var(--secondary);
+}
+
+.gcal-sync-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* Quick Actions Grid */
@@ -364,6 +422,15 @@ body {
   gap: 3px;
 }
 
+.recurring-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--purple-light);
+  color: var(--purple);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -450,7 +517,7 @@ body {
   color: var(--rose);
 }
 
-/* Wish Approval Buttons */
+/* Wish Approval & AdHoc Cancel Buttons */
 .wish-approval-actions {
   display: flex;
   gap: 6px;
@@ -473,6 +540,17 @@ body {
   border: none;
   padding: 5px 10px;
   border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-cancel-adhoc {
+  background: var(--rose-light);
+  color: var(--rose);
+  border: 1px solid var(--rose);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;

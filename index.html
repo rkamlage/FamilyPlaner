@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>FamilyPlaner - Zeitplanung & Aktivitäten für Familien</title>
+  <title>FamilyPlaner - Zeitplanung & Hobbys für Familien</title>
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,8 +47,20 @@
           <div class="banner-icon">🛡️</div>
           <div class="banner-text">
             <strong id="mode-banner-title">Eltern-Supervision aktiv</strong>
-            <p id="mode-banner-sub">Du siehst alle Familienaktivitäten, Anfragen & verknüpfte Profile.</p>
+            <p id="mode-banner-sub">Du siehst alle Familienaktivitäten, Anfragen, Wunsch-Freigaben & Kalender-Sync.</p>
           </div>
+        </div>
+
+        <!-- External Calendar Sync Quick Status Bar -->
+        <div class="sync-status-box" onclick="switchTab('tab-calendar')">
+          <div class="sync-info">
+            <span class="gcal-icon">🗓️</span>
+            <div>
+              <strong>Google Kalender: Synchronisiert</strong>
+              <span class="sync-sub">Letzter Sync: Vor 5 Minuten (14 externe Termine)</span>
+            </div>
+          </div>
+          <span class="sync-badge active">Aktiv 🔄</span>
         </div>
 
         <!-- Quick Actions Grid -->
@@ -87,13 +99,13 @@
           </div>
         </div>
 
-        <!-- Wish Matches Highlight Widget -->
+        <!-- Today's Hol-/Bringdienste (Carpool Logistics Widget) -->
         <div class="section-card highlight-card">
           <div class="card-header">
-            <h3>🎯 Wish-Matches (Befreundete Kinder)</h3>
-            <span class="badge green">Match gefunden!</span>
+            <h3>🚗 Hol- & Bringdienste Heute</h3>
+            <span class="badge green">Fahrgemeinschaften</span>
           </div>
-          <div id="dashboard-wish-matches" class="card-list">
+          <div id="dashboard-carpool-list" class="card-list">
             <!-- Dynamic Content via app.js -->
           </div>
         </div>
@@ -115,7 +127,7 @@
         <div class="section-title-bar">
           <div>
             <h2>⚡ Spontane Verabredungen</h2>
-            <p>Wer hat heute spontan Zeit für Sport, Spiel oder Ausflüge?</p>
+            <p>Wer hat heute spontan Zeit? (Eltern können Anfragen stornieren)</p>
           </div>
           <button class="btn btn-primary" onclick="openAdHocModal()">+ Neue Anfrage</button>
         </div>
@@ -155,16 +167,43 @@
         </div>
       </section>
 
-      <!-- TAB 4: KALENDER, KOSTEN & CARPOOLING -->
+      <!-- TAB 4: HOBBYS, KALENDER & GOOGLE SYNC -->
       <section id="tab-calendar" class="tab-content">
         <div class="section-title-bar">
           <div>
-            <h2>📅 Familienkalender & Kosten</h2>
-            <p>Termine, optionale Kosten & Fahrgemeinschaften</p>
+            <h2>📅 Hobbys & Kalender-Sync</h2>
+            <p>Google Kalender, wöchentliche Hobbys & Hol-/Bringdienst</p>
+          </div>
+        </div>
+
+        <!-- Google Calendar Integration Box -->
+        <div class="section-card highlight-card">
+          <div class="card-header">
+            <h3>🌐 Externer Kalender-Import</h3>
+            <span class="badge green">Google Sync</span>
+          </div>
+          <div class="gcal-sync-row">
+            <div>
+              <strong style="font-size:13px;">Google Calendar (Familie Müller)</strong>
+              <p style="font-size:11px; color:var(--text-muted);">Synchronisiert Schultage, Eltern-Termine & Feiertage.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="triggerGoogleSync()">🔄 Jetzt syncen</button>
+          </div>
+        </div>
+
+        <!-- Recurring Hobbies & Driver Logistics Section -->
+        <div class="section-card">
+          <div class="card-header">
+            <h3>🏆 Wöchentliche Hobbys & Hol-/Bringdienste</h3>
+            <button class="btn btn-sm btn-primary" onclick="openHobbyModal()">+ Hobby anlegen</button>
+          </div>
+          <div id="recurring-hobbies-list" class="grid-list">
+            <!-- Dynamic Content via app.js -->
           </div>
         </div>
 
         <!-- Calendar Filter Tabs -->
+        <h3 style="margin-bottom:10px;">Gesamter Familien-Terminplan</h3>
         <div class="filter-pills" id="calendar-filters">
           <button class="pill active" onclick="filterCalendar('all')">Alle Mitglieder</button>
           <button class="pill" onclick="filterCalendar('Nick')">👦 Nick</button>
@@ -223,7 +262,7 @@
       </button>
       <button class="nav-item" data-tab="tab-calendar" onclick="switchTab('tab-calendar')">
         <span class="nav-icon">📅</span>
-        <span class="nav-label">Kalender</span>
+        <span class="nav-label">Hobbys</span>
       </button>
       <button class="nav-item" data-tab="tab-friends" onclick="switchTab('tab-friends')">
         <span class="nav-icon">⚙️</span>
@@ -249,7 +288,7 @@
             <div class="profile-details">
               <strong>Tom (Vater)</strong>
               <span class="role-badge parent">Eltern-Modus</span>
-              <p>Voller Zugriff, Wunsch-Genehmigung, Rechte & Kosten-Übersicht.</p>
+              <p>Voller Zugriff, Spontan-Veto, Wunsch-Genehmigung & Hol-/Bringdienste.</p>
             </div>
             <span class="radio-check">✓</span>
           </div>
@@ -382,6 +421,67 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" onclick="closeModal('modal-wish')">Abbrechen</button>
           <button type="submit" class="btn btn-primary">✨ Wunsch speichern</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: NEW RECURRING HOBBY -->
+  <div id="modal-hobby" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🏆 Neues wöchentliches Hobby anlegen</h3>
+        <button class="close-btn" onclick="closeModal('modal-hobby')">✕</button>
+      </div>
+      <form id="form-hobby" onsubmit="handleCreateHobby(event)" class="modal-body">
+        <div class="form-group">
+          <label>Für wen?</label>
+          <select id="hobby-child-select" class="form-input">
+            <option value="Nick">👦 Nick</option>
+            <option value="Maya">👧 Maya</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Hobby / Aktivität</label>
+          <input type="text" id="hobby-title" class="form-input" placeholder="z.B. Fußball-Training, Geigenunterricht, Turnen..." required>
+        </div>
+
+        <div class="form-group grid-2">
+          <div>
+            <label>Wochentag & Zeit</label>
+            <input type="text" id="hobby-time" class="form-input" placeholder="z.B. Jeden Di, 17:00-18:30" required>
+          </div>
+          <div>
+            <label>Ort</label>
+            <input type="text" id="hobby-location" class="form-input" placeholder="z.B. Sporthalle Süd" required>
+          </div>
+        </div>
+
+        <div class="form-group grid-2">
+          <div>
+            <label>🚗 Hin-Fahrt (Bringdienst)</label>
+            <select id="hobby-bring" class="form-input">
+              <option value="Fam. Müller (Wir)">Fam. Müller (Wir)</option>
+              <option value="Fam. Weber">Fam. Weber</option>
+              <option value="Fam. Fischer">Fam. Fischer</option>
+              <option value="Offen (Wer bringt?)">Offen (Wer bringt?)</option>
+            </select>
+          </div>
+          <div>
+            <label>🚗 Rück-Fahrt (Holdienst)</label>
+            <select id="hobby-get" class="form-input">
+              <option value="Fam. Weber">Fam. Weber</option>
+              <option value="Fam. Müller (Wir)">Fam. Müller (Wir)</option>
+              <option value="Fam. Fischer">Fam. Fischer</option>
+              <option value="Offen (Wer holt?)">Offen (Wer holt?)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-hobby')">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">🏆 Hobby speichern</button>
         </div>
       </form>
     </div>
