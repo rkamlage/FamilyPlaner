@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FamilyPlaner - Zeitplanung & Aktivitäten für Familien</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Push Notification Simulation Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-icon">👨‍👩‍👧‍👦</div>
+        <div class="logo-text">
+          <h1>FamilyPlaner</h1>
+          <span class="family-badge" id="current-family-badge">Familie Müller</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <!-- Role/Profile Switcher Button -->
+        <button class="profile-switcher-btn" id="profile-switcher-btn" onclick="toggleProfileModal()">
+          <span class="profile-avatar" id="active-avatar">👨</span>
+          <div class="profile-info">
+            <span class="profile-name" id="active-profile-name">Tom (Eltern)</span>
+            <span class="profile-role-tag" id="active-profile-role">Eltern-Modus</span>
+          </div>
+          <span class="chevron">▼</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      
+      <!-- TAB 1: DASHBOARD / HEUTE -->
+      <section id="tab-dashboard" class="tab-content active">
+        <!-- Mode Announcement Banner -->
+        <div class="mode-banner" id="mode-banner">
+          <div class="banner-icon">🛡️</div>
+          <div class="banner-text">
+            <strong id="mode-banner-title">Eltern-Supervision aktiv</strong>
+            <p id="mode-banner-sub">Du siehst alle Familienaktivitäten, Anfragen & verknüpfte Profile.</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions Bar -->
+        <div class="quick-actions-grid">
+          <button class="action-card primary" onclick="openAdHocModal()">
+            <span class="action-icon">⚡</span>
+            <span class="action-label">Spontan-Anfrage</span>
+            <span class="action-sub">Wer hat JETZT Zeit?</span>
+          </button>
+          <button class="action-card secondary" onclick="openWishModal()">
+            <span class="action-icon">✨</span>
+            <span class="action-label">Wunsch eintragen</span>
+            <span class="action-sub">Kino, Schwimmen...</span>
+          </button>
+        </div>
+
+        <!-- Active Ad-Hoc Shoutouts Widget -->
+        <div class="section-card">
+          <div class="card-header">
+            <h3>⚡ Aktive Spontan-Anfragen</h3>
+            <span class="badge pulse" id="adhoc-count-badge">2 Aktiv</span>
+          </div>
+          <div id="dashboard-adhoc-list" class="card-list">
+            <!-- Dynamic Content via app.js -->
+          </div>
+        </div>
+
+        <!-- Wish Matches Highlight Widget -->
+        <div class="section-card highlight-card">
+          <div class="card-header">
+            <h3>🎯 Wish-Matches (Befreundete Kinder)</h3>
+            <span class="badge green">Match gefunden!</span>
+          </div>
+          <div id="dashboard-wish-matches" class="card-list">
+            <!-- Dynamic Content via app.js -->
+          </div>
+        </div>
+
+        <!-- Today's Schedule Overview -->
+        <div class="section-card">
+          <div class="card-header">
+            <h3>📅 Heute im Familienkalender</h3>
+            <button class="text-btn" onclick="switchTab('tab-calendar')">Alle anzeigen →</button>
+          </div>
+          <div id="dashboard-today-list" class="card-list">
+            <!-- Dynamic Content via app.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: SPONTAN (AD-HOC) -->
+      <section id="tab-adhoc" class="tab-content">
+        <div class="section-title-bar">
+          <div>
+            <h2>⚡ Spontane Verabredungen</h2>
+            <p>Wer hat heute spontan Zeit für Sport, Spiel oder Ausflüge?</p>
+          </div>
+          <button class="btn btn-primary" onclick="openAdHocModal()">+ Neue Anfrage</button>
+        </div>
+
+        <div id="adhoc-full-list" class="grid-list">
+          <!-- Dynamic Content via app.js -->
+        </div>
+      </section>
+
+      <!-- TAB 3: WÜNSCHE & MATCHES -->
+      <section id="tab-wishes" class="tab-content">
+        <div class="section-title-bar">
+          <div>
+            <h2>✨ Kinder-Wunschliste</h2>
+            <p>Wünsche der Kinder & automatische Treffer mit befreundeten Familien</p>
+          </div>
+          <button class="btn btn-primary" onclick="openWishModal()">+ Wunsch eintragen</button>
+        </div>
+
+        <!-- Wish Matches Banner -->
+        <div class="matches-alert-box">
+          <div class="alert-header">
+            <span class="icon">💡</span>
+            <div>
+              <strong>Automatische Termin-Vorschläge</strong>
+              <p>Wenn zwei Kinder den gleichen Wunsch haben, schlagen wir ein Treffen vor!</p>
+            </div>
+          </div>
+          <div id="wish-matches-container" class="matches-grid">
+            <!-- Dynamic Matches via app.js -->
+          </div>
+        </div>
+
+        <h3>Alle Wünsche in der Übersicht</h3>
+        <div id="wishes-full-list" class="grid-list">
+          <!-- Dynamic Wishes via app.js -->
+        </div>
+      </section>
+
+      <!-- TAB 4: KALENDER & CARPOOLING -->
+      <section id="tab-calendar" class="tab-content">
+        <div class="section-title-bar">
+          <div>
+            <h2>📅 Familienkalender</h2>
+            <p>Termine, Verabredungen & Fahrgemeinschaften</p>
+          </div>
+        </div>
+
+        <!-- Calendar Filter Tabs -->
+        <div class="filter-pills" id="calendar-filters">
+          <button class="pill active" onclick="filterCalendar('all')">Alle Mitglieder</button>
+          <button class="pill" onclick="filterCalendar('Nick')">👦 Nick</button>
+          <button class="pill" onclick="filterCalendar('Maya')">👧 Maya</button>
+          <button class="pill" onclick="filterCalendar('Eltern')">👨‍👩‍👦 Eltern</button>
+        </div>
+
+        <div id="calendar-event-list" class="timeline-list">
+          <!-- Dynamic Content via app.js -->
+        </div>
+      </section>
+
+      <!-- TAB 5: BEFREUNDETE FAMILIEN -->
+      <section id="tab-friends" class="tab-content">
+        <div class="section-title-bar">
+          <div>
+            <h2>🤝 Befreundete Familien</h2>
+            <p>Vernetzte Familien für gemeinsamen Kalender & Spontan-Anfragen</p>
+          </div>
+          <button class="btn btn-secondary" onclick="showConnectModal()">+ Familie verknüpfen</button>
+        </div>
+
+        <div id="friends-family-list" class="grid-list">
+          <!-- Dynamic Content via app.js -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Mobile Navigation Bar -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard')">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Heute</span>
+      </button>
+      <button class="nav-item" data-tab="tab-adhoc" onclick="switchTab('tab-adhoc')">
+        <span class="nav-icon">⚡</span>
+        <span class="nav-label">Spontan</span>
+        <span class="nav-badge" id="nav-adhoc-badge">2</span>
+      </button>
+      <button class="nav-item" data-tab="tab-wishes" onclick="switchTab('tab-wishes')">
+        <span class="nav-icon">✨</span>
+        <span class="nav-label">Wünsche</span>
+      </button>
+      <button class="nav-item" data-tab="tab-calendar" onclick="switchTab('tab-calendar')">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Kalender</span>
+      </button>
+      <button class="nav-item" data-tab="tab-friends" onclick="switchTab('tab-friends')">
+        <span class="nav-icon">🤝</span>
+        <span class="nav-label">Familien</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- MODAL: PROFILE / ROLE SWITCHER -->
+  <div id="modal-profile" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Profil & Rolle wechseln</h3>
+        <button class="close-btn" onclick="closeModal('modal-profile')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Wähle aus, als wer du die App gerade steuerst. Dies zeigt die unterschiedlichen Sichten für Eltern und Kinder (mit/ohne eigenes Handy).</p>
+        
+        <div class="profile-options-list">
+          <!-- Option 1: Parent -->
+          <div class="profile-option-card active" onclick="setActiveProfile('parent')">
+            <div class="profile-avatar large">👨</div>
+            <div class="profile-details">
+              <strong>Tom (Vater)</strong>
+              <span class="role-badge parent">Eltern-Modus</span>
+              <p>Voller Zugriff, Eltern-Freigaben, Fahrgemeinschaften & Kalender.</p>
+            </div>
+            <span class="radio-check">✓</span>
+          </div>
+
+          <!-- Option 2: Independent Child -->
+          <div class="profile-option-card" onclick="setActiveProfile('child_independent')">
+            <div class="profile-avatar large">👦</div>
+            <div class="profile-details">
+              <strong>Nick (11 Jahre - Eigenes Handy)</strong>
+              <span class="role-badge child">Eigener Account</span>
+              <p>Kindgerechte Sicht: Spontan-Anfragen senden, Wünsche eintragen.</p>
+            </div>
+            <span class="radio-check">✓</span>
+          </div>
+
+          <!-- Option 3: Managed Child -->
+          <div class="profile-option-card" onclick="setActiveProfile('child_managed')">
+            <div class="profile-avatar large">👧</div>
+            <div class="profile-details">
+              <strong>Maya (7 Jahre - Verwaltetes Profil)</strong>
+              <span class="role-badge managed">Von Eltern verwaltet</span>
+              <p>Eltern steuern Wünsche & Anfragen für Maya.</p>
+            </div>
+            <span class="radio-check">✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NEW AD-HOC REQUEST -->
+  <div id="modal-adhoc" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚡ Neue Spontan-Anfrage</h3>
+        <button class="close-btn" onclick="closeModal('modal-adhoc')">✕</button>
+      </div>
+      <form id="form-adhoc" onsubmit="handleCreateAdHoc(event)" class="modal-body">
+        <div class="form-group">
+          <label>Wer hat Lust?</label>
+          <select id="adhoc-creator-select" class="form-input">
+            <option value="Nick (11 J.)">👦 Nick</option>
+            <option value="Maya (7 J.)">👧 Maya</option>
+            <option value="Familie Müller">👨‍👩‍👧‍👦 Gesamte Familie</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Aktivität / Was habt ihr vor?</label>
+          <input type="text" id="adhoc-activity" class="form-input" placeholder="z.B. Fußball spielen im Park, Schwimmbad..." required>
+        </div>
+
+        <div class="form-group grid-2">
+          <div>
+            <label>Wann?</label>
+            <select id="adhoc-time" class="form-input">
+              <option value="Sofort / Jetzt">⚡ Jetzt sofort</option>
+              <option value="Heute 15:00 Uhr">Heute 15:00 Uhr</option>
+              <option value="Heute 16:30 Uhr">Heute 16:30 Uhr</option>
+              <option value="Morgen Nachmittag">Morgen Nachmittag</option>
+            </select>
+          </div>
+          <div>
+            <label>Ort</label>
+            <input type="text" id="adhoc-location" class="form-input" placeholder="z.B. Bolzplatz, Stadtbad..." required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Empfänger (Befreundete Familien)</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" checked> Familie Weber (Jonas & Emma)</label>
+            <label class="checkbox-label"><input type="checkbox" checked> Familie Fischer (Ben)</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-adhoc')">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">⚡ An befreundete Familien senden</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: NEW WISH -->
+  <div id="modal-wish" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>✨ Neuen Wunsch eintragen</h3>
+        <button class="close-btn" onclick="closeModal('modal-wish')">✕</button>
+      </div>
+      <form id="form-wish" onsubmit="handleCreateWish(event)" class="modal-body">
+        <div class="form-group">
+          <label>Für wen ist der Wunsch?</label>
+          <select id="wish-child-select" class="form-input">
+            <option value="Nick">👦 Nick</option>
+            <option value="Maya">👧 Maya</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Kategorie / Wunsch</label>
+          <select id="wish-category" class="form-input" onchange="updateWishIcon()">
+            <option value="🏊 Schwimmbad">🏊 Schwimmbad / Rutschen</option>
+            <option value="🎬 Kino">🎬 Kino / Filmabend</option>
+            <option value="⚽ Fußball / Sport">⚽ Fußball / Sport</option>
+            <option value="🎲 Brettspiele">🎲 Brettspiel-Nachmittag</option>
+            <option value="🍦 Eis essen">🍦 Eis essen gehen</option>
+            <option value="🧗 Klettern / Spielplatz">🧗 Klettern / Abenteuerspielplatz</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Zusatz-Info / Beschreibung</label>
+          <input type="text" id="wish-desc" class="form-input" placeholder="z.B. Gerne am Wochenende mit Freunden...">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-wish')">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">✨ Wunsch speichern</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONNECT FAMILY -->
+  <div id="modal-connect" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🤝 Befreundete Familie verknüpfen</h3>
+        <button class="close-btn" onclick="closeModal('modal-connect')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Teile deinen Familien-Einladungscode mit befreundeten Eltern oder gib deren Code hier ein.</p>
+        
+        <div class="invite-box">
+          <span>Dein Code:</span>
+          <strong class="invite-code">MUELLER-2026-FP</strong>
+          <button class="btn btn-sm btn-ghost" onclick="copyInviteCode()">📋 Kopieren</button>
+        </div>
+
+        <hr class="divider">
+
+        <div class="form-group">
+          <label>Familien-Code eingeben</label>
+          <input type="text" id="connect-code-input" class="form-input uppercase" placeholder="z.B. WEBER-9981">
+        </div>
+        <button class="btn btn-primary full-width" onclick="handleConnectFamily()">Verbindungsanfrage senden</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
