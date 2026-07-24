@@ -122,6 +122,39 @@ async function fetchCloudData() {
   if (hobbiesRes.data && hobbiesRes.data.length > 0) state.recurringHobbies = hobbiesRes.data.map(mapHobbyFromDB);
   else state.recurringHobbies = [];
   
+  // Build dynamic calendar events from wishes and hobbies
+  const dynamicEvents = [];
+  
+  state.wishes.filter(w => w.status === 'Genehmigt').forEach(w => {
+    dynamicEvents.push({
+      id: `cal-w-${w.id}`,
+      title: `${w.category} (Wunsch)`,
+      status: 'Geplant',
+      forMember: w.child,
+      time: 'Noch offen',
+      location: 'Wird noch geklärt',
+      parentPresent: '',
+      cost: w.cost,
+      source: 'Internal'
+    });
+  });
+  
+  state.recurringHobbies.forEach(h => {
+    dynamicEvents.push({
+      id: `cal-h-${h.id}`,
+      title: h.title,
+      status: h.status.includes('geregelt') ? 'Fahrt geregelt' : 'Fahrt offen',
+      forMember: h.child || 'Alle',
+      time: h.schedule,
+      location: h.location,
+      parentPresent: h.parentPresent,
+      cost: '',
+      source: 'Internal'
+    });
+  });
+  
+  state.calendarEvents = dynamicEvents;
+  
   renderApp();
 }
 
@@ -154,7 +187,7 @@ function mapAdHocFromDB(dbRow) {
     cost: dbRow.cost,
     parentPresent: dbRow.parent_present,
     status: dbRow.status === 'active' ? 'Aktiv' : (dbRow.status === 'cancelled' ? 'Storniert' : 'Beendet'),
-    rsvps: [] // Simplified for MVP
+    rsvps: dbRow.rsvps || []
   };
 }
 
@@ -368,20 +401,28 @@ function populateDropdowns() {
 // Render Own Family Members List (Tab 5)
 function renderOwnFamilyMembers() {
   const container = document.getElementById('own-family-members-list');
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  const isEditing = state.isEditingMembers;
+
   container.innerHTML = state.members.map(m => `
     <div class="list-item">
       <div class="list-item-left">
         <span class="item-avatar">${m.avatar}</span>
         <div>
           <div class="item-title">${m.name} (${m.age ? m.age + ' J.' : 'Mitglied'})</div>
-          <div class="item-sub">${m.isParent ? '👨‍👩‍👦 Elternteil (Admin)' : (m.hasOwnDevice ? '📱 Eigenes Smartphone' : '👧 Verwaltetes Kinder-Profil')}</div>
+          <div class="item-sub">${m.isParent ? '👨‍👩‍👧‍👦 Elternteil (Admin)' : (m.hasOwnDevice ? '📱 Eigenes Smartphone' : '👦 Verwaltetes Kinder-Profil')}</div>
         </div>
       </div>
-      ${state.activeProfile === 'parent' && state.members.length > 1 ? `
-        <button class="btn btn-ghost btn-sm" onclick="removeFamilyMember('${m.id}')">Entfernen</button>
+      ${(isEditing && curMember && curMember.isParent && m.id !== curMember.id) ? `
+        <button class="btn btn-ghost" style="color:var(--danger);" onclick="deleteFamilyMember('${m.id}')">🗑️</button>
       ` : ''}
     </div>
   `).join('');
+}
+
+function toggleEditMembers() {
+  state.isEditingMembers = !state.isEditingMembers;
+  renderOwnFamilyMembers();
 }
 
 // Add New Family Member
@@ -467,19 +508,28 @@ function renderDashboard() {
 
   // Dashboard Carpool Driver Logistics Widget (Internal & External)
   const carpoolContainer = document.getElementById('dashboard-carpool-list');
-  carpoolContainer.innerHTML = state.recurringHobbies.map(h => `
+  carpoolContainer.innerHTML = state.recurringHobbies.map(h => {
+    const isParent = curMember.isParent;
+    const bringBtn = (isParent && h.bringDriver && h.bringDriver.includes('Offen')) ? `<button class="btn btn-ghost" style="padding: 2px 6px; font-size: 11px; margin-top: 4px; display:block;" onclick="assignDriver('${h.id}', 'bring')">Ich fahre Hin</button>` : '';
+    const getBtn = (isParent && h.getDriver && h.getDriver.includes('Offen')) ? `<button class="btn btn-ghost" style="padding: 2px 6px; font-size: 11px; margin-top: 4px; display:block;" onclick="assignDriver('${h.id}', 'get')">Ich fahre Rück</button>` : '';
+    
+    return `
     <div class="list-item">
       <div class="list-item-left">
         <span class="item-avatar">${h.avatar}</span>
         <div>
           <div class="item-title">${h.title}</div>
-          <div class="item-sub">⏰ ${h.schedule}</div>
+          <div class="item-sub">⏱ ${h.schedule}</div>
           <div class="item-sub" style="color:var(--primary); font-weight:600;">🚗 Hin: ${h.bringDriver} | 🚗 Rück: ${h.getDriver}</div>
         </div>
       </div>
-      <span class="item-status-pill ${h.status.includes('offen') ? 'pending' : 'accepted'}">${h.status}</span>
+      <div style="display:flex; flex-direction:column; align-items:flex-end;">
+        <span class="item-status-pill ${h.status.includes('offen') ? 'pending' : 'accepted'}">${h.status}</span>
+        ${bringBtn}
+        ${getBtn}
+      </div>
     </div>
-  `).join('');
+  `}).join('');
 
   // Ad-hoc Summary List
   const adhocContainer = document.getElementById('dashboard-adhoc-list');
@@ -684,21 +734,21 @@ function renderWishesList() {
 }
 
 // Wish Approval Handlers
-function approveWish(wishId) {
+async function approveWish(wishId) {
   const wish = state.wishes.find(w => w.id === wishId);
   if (wish) {
     wish.status = 'Genehmigt';
-    saveState();
+    if (currentFamilyId) await db.from('wishes').update({ status: 'approved' }).eq('id', wishId);
     renderApp();
     showToast(`✅ Wunsch "${wish.category}" für ${wish.child} genehmigt!`);
   }
 }
 
-function declineWish(wishId) {
+async function declineWish(wishId) {
   const wish = state.wishes.find(w => w.id === wishId);
   if (wish) {
     wish.status = 'Abgelehnt';
-    saveState();
+    if (currentFamilyId) await db.from('wishes').update({ status: 'declined' }).eq('id', wishId);
     renderApp();
     showToast(`❌ Wunsch "${wish.category}" abgelehnt.`);
   }
@@ -979,11 +1029,12 @@ async function handleCreateAdHoc(event) {
   showToast(`⚡ Spontan-Anfrage an ${targetAudience} gesendet!`);
 }
 
-function respondAdHoc(reqId, answerText) {
+async function respondAdHoc(reqId, answerText) {
   const req = state.adHocRequests.find(r => r.id === reqId);
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
 
   if (req) {
+    if (!req.rsvps) req.rsvps = [];
     req.rsvps.push({
       family: state.currentFamily,
       name: curMember.name,
@@ -1289,3 +1340,35 @@ initSupabase();
 setTimeout(() => {
   showToast('✨ Wilkommen bei FamilyPlaner! Jonas (Fam. Weber) möchte auch schwimmen gehen!');
 }, 1500);
+
+async function deleteFamilyMember(memberId) {
+  if(confirm("Möchtest du dieses Familienmitglied wirklich entfernen?")) {
+    await db.from('users').delete().eq('id', memberId);
+    renderApp();
+    showToast("Mitglied entfernt.");
+  }
+}
+
+async function assignDriver(hobbyId, direction) {
+  const hobby = state.recurringHobbies.find(h => h.id === hobbyId);
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (hobby && curMember && currentFamilyId) {
+    let update = {};
+    if (direction === 'bring') {
+      hobby.bringDriver = curMember.name;
+      update = { bring_driver: curMember.name };
+    } else {
+      hobby.getDriver = curMember.name;
+      update = { get_driver: curMember.name };
+    }
+    
+    if (!hobby.bringDriver.includes('Offen') && !hobby.getDriver.includes('Offen')) {
+      hobby.status = 'Fahrten geregelt';
+      update.status = 'Fahrten geregelt';
+    }
+    
+    await db.from('recurring_hobbies').update(update).eq('id', hobbyId);
+    renderApp();
+    showToast(`✅ Du bist als Fahrer eingetragen!`);
+  }
+}

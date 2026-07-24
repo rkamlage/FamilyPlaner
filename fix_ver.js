@@ -1,0 +1,1 @@
+const fs = require(" fs\); let html = fs.readFileSync(\index.html\, \utf8\); html = html.replace(/app.js\\?v=17/g, \app.js?v=18\); html = html.replace(/v0.0.17/g, \v0.0.18\); fs.writeFileSync(\index.html\, html);

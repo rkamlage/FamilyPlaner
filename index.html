@@ -227,12 +227,9 @@
 
         <!-- Calendar Filter Tabs -->
         <h3 style="margin-bottom:10px;">Gesamter Familien-Terminplan</h3>
-        <div class="filter-pills" id="calendar-filters">
-          <button class="pill active" onclick="filterCalendar('all')">Alle Mitglieder</button>
-          <button class="pill" onclick="filterCalendar('Nick')">👦 Nick</button>
-          <button class="pill" onclick="filterCalendar('Maya')">👧 Maya</button>
-          <button class="pill" onclick="filterCalendar('Eltern')">👨‍👩‍👦 Eltern</button>
-        </div>
+        <div class="filter-pills" id="calendar-filters-container">
+            <!-- Dynamic Filters -->
+          </div>
 
         <div id="calendar-event-list" class="timeline-list">
           <!-- Dynamic Content via app.js -->
@@ -275,6 +272,7 @@
           <div class="card-header">
             <h3>🏠 Familienmitglieder von <span id="family-title-name">...</span></h3>
             <span class="badge">Eigene Familie</span>
+            <button class="btn btn-ghost" style="padding:4px 8px; font-size:12px; margin-left:10px;" onclick="toggleEditMembers()">✏️ Bearbeiten</button>
           </div>
           <p class="card-sub-desc">Verwalte Eltern, Kinder und deren Geräte-Zugänge.</p>
           <div id="own-family-members-list" class="grid-list">
@@ -742,7 +740,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=18"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -754,7 +752,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.17");
+    versionDisplays.forEach(el => el.textContent = "v0.0.18");
   </script>
 </body>
 </html>
