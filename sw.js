@@ -1,5 +1,5 @@
 // Service Worker for FamilyPlaner PWA support - Network First Strategy
-const CACHE_NAME = 'familyplaner-v3';
+const CACHE_NAME = 'familyplaner-v4';
 const ASSETS = [
   './',
   './index.html',
