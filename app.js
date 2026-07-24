@@ -193,32 +193,36 @@ async function fetchCloudData() {
   const dynamicEvents = [];
   
   state.wishes.filter(w => w.status === 'Genehmigt').forEach(w => {
-    dynamicEvents.push({
-      id: `cal-w-${w.id}`,
-      title: `${w.category} (Wunsch)`,
-      status: 'Geplant',
-      forMember: w.child,
-      time: 'Noch offen',
-      location: 'Wird noch geklärt',
-      parentPresent: '',
-      cost: w.cost,
-      source: 'Internal'
+      dynamicEvents.push({
+        id: `cal-w-${w.id}`,
+        dbId: w.id,
+        title: `${w.category} (Wunsch)`,
+        status: 'Geplant',
+        forMember: w.child,
+        time: 'Noch offen',
+        location: 'Wird noch geklärt',
+        parentPresent: '',
+        cost: w.cost,
+        source: 'Wish'
+      });
     });
-  });
   
   state.recurringHobbies.forEach(h => {
-    dynamicEvents.push({
-      id: `cal-h-${h.id}`,
-      title: h.title,
-      status: h.status.includes('geregelt') ? 'Fahrt geregelt' : 'Fahrt offen',
-      forMember: h.child || 'Alle',
-      time: h.schedule,
-      location: h.location,
-      parentPresent: h.parentPresent,
-      cost: '',
-      source: 'Internal'
+      dynamicEvents.push({
+        id: `cal-h-${h.id}`,
+        dbId: h.id,
+        title: h.title,
+        status: h.status.includes('geregelt') ? 'Fahrt geregelt' : 'Fahrt offen',
+        forMember: h.child || 'Alle',
+        time: h.schedule,
+        location: h.location,
+        parentPresent: h.parentPresent,
+        cost: '',
+        bringDriver: h.bringDriver,
+        getDriver: h.getDriver,
+        source: 'Hobby'
+      });
     });
-  });
   
   
   state.appointments.forEach(a => {
@@ -980,21 +984,17 @@ function renderCalendarEvents() {
         ${evt.parentPresent ? `<div>👨‍👩‍👧 <strong>Begleitung:</strong> <span class="parent-presence-pill ${evt.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${evt.parentPresent}</span></div>` : ''}
         ${evt.cost ? `<div>💶 <strong>Kosten:</strong> <span class="cost-badge">${evt.cost}</span></div>` : ''}
       </div>
-      ${(evt.source === 'Appointment') ? `
-        <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
-          🚗 Fahrer Hin: ${evt.bringDriver || '-'} | Fahrer Rück: ${evt.getDriver || '-'}
-          ${(evt.bringDriver === 'Offen' || evt.getDriver === 'Offen') ? `
-            <div style="margin-top:8px; display:flex; gap:8px;">
-              ${evt.bringDriver === 'Offen' ? `<button class="btn btn-sm" style="flex:1; background:white; color:var(--primary); border:1px solid var(--primary);" onclick="assignApptDriver('${evt.dbId}', 'bring')">🚗 Ich fahre Hin</button>` : ''}
-              ${evt.getDriver === 'Offen' ? `<button class="btn btn-sm" style="flex:1; background:white; color:var(--primary); border:1px solid var(--primary);" onclick="assignApptDriver('${evt.dbId}', 'get')">🚗 Ich fahre Rück</button>` : ''}
-            </div>
-          ` : ''}
-        </div>
-      ` : `
-        <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
-          🚗 Fahrgemeinschaft: ${evt.carpool}
-        </div>
-      `}
+      ${(evt.source === 'Appointment' || evt.source === 'Hobby') ? `
+          <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
+            🚗 Fahrer Hin: ${evt.bringDriver || '-'} | Fahrer Rück: ${evt.getDriver || '-'}
+            ${(evt.bringDriver === 'Offen' || evt.getDriver === 'Offen') ? `
+              <div style="margin-top:8px; display:flex; gap:8px;">
+                ${evt.bringDriver === 'Offen' ? `<button class="btn btn-sm" style="flex:1; background:white; color:var(--primary); border:1px solid var(--primary);" onclick="${evt.source === 'Appointment' ? 'assignApptDriver' : 'assignDriver'}('${evt.dbId}', 'bring')">🚗 Ich fahre Hin</button>` : ''}
+                ${evt.getDriver === 'Offen' ? `<button class="btn btn-sm" style="flex:1; background:white; color:var(--primary); border:1px solid var(--primary);" onclick="${evt.source === 'Appointment' ? 'assignApptDriver' : 'assignDriver'}('${evt.dbId}', 'get')">🚗 Ich fahre Rück</button>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
     </div>
   `).join('');
 }
