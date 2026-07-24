@@ -643,7 +643,7 @@
         <div class="logo-icon" style="margin: 0 auto; margin-bottom: 15px; font-size: 40px; width: 60px; height: 60px;">👨‍👩‍👧‍👦</div>
         <h2>FamilyPlaner</h2>
         <p style="font-size:12px; color:var(--text-muted);">Melde dich an, um mit deiner Familie zu starten.</p>
-        <span class="app-version-display" style="font-size: 10px; color: var(--text-muted); opacity: 0.7;">v0.0.0</span>
+        <span class="app-version-display" style="font-size: 10px; color: var(--text-muted); opacity: 0.7;">v0.0.6 (Loading)</span>
       </div>
 
       <div style="display:flex; gap:10px; margin-bottom: 15px;">
@@ -729,12 +729,19 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=6"></script>
   <script>
-    // Register PWA Service Worker
+    // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
     }
+    // Update Version UI inline
+    const versionDisplays = document.querySelectorAll('.app-version-display');
+    versionDisplays.forEach(el => el.textContent = "v0.0.6");
   </script>
 </body>
 </html>

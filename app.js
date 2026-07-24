@@ -3,15 +3,7 @@
    ========================================================================== */
 
 // APP CONFIGURATION
-const APP_VERSION = "v0.0.5";
-
-// Set App Version in UI immediately before anything else can crash
-try {
-  const versionDisplays = document.querySelectorAll('.app-version-display');
-  versionDisplays.forEach(el => el.textContent = APP_VERSION);
-} catch (e) {
-  console.error(e);
-}
+const APP_VERSION = "v0.0.6";
 
 // --- Application State ---
 const defaultState = {
@@ -1168,13 +1160,19 @@ let isRegisterMode = false;
 let familyMode = 'create'; // 'create' or 'join'
 
 function setAuthMode(mode) {
-  isRegisterMode = (mode === 'register');
-  
-  document.getElementById('tab-login').className = isRegisterMode ? 'btn btn-ghost full-width' : 'btn btn-primary full-width';
-  document.getElementById('tab-register').className = isRegisterMode ? 'btn btn-primary full-width' : 'btn btn-ghost full-width';
-  
-  document.getElementById('auth-register-fields').style.display = isRegisterMode ? 'flex' : 'none';
-  document.getElementById('auth-submit-btn').textContent = isRegisterMode ? 'Registrieren & Weiter' : 'Einloggen';
+  console.log('setAuthMode called with mode:', mode);
+  try {
+    isRegisterMode = (mode === 'register');
+    
+    document.getElementById('tab-login').className = isRegisterMode ? 'btn btn-ghost full-width' : 'btn btn-primary full-width';
+    document.getElementById('tab-register').className = isRegisterMode ? 'btn btn-primary full-width' : 'btn btn-ghost full-width';
+    
+    document.getElementById('auth-register-fields').style.display = isRegisterMode ? 'flex' : 'none';
+    document.getElementById('auth-submit-btn').textContent = isRegisterMode ? 'Registrieren & Weiter' : 'Einloggen';
+  } catch(e) {
+    console.error('Error in setAuthMode:', e);
+    alert('Interner Fehler beim Wechseln des Modus: ' + e.message);
+  }
 }
 
 function toggleFamilyMode() {
@@ -1194,6 +1192,8 @@ function toggleFamilyMode() {
 
 async function handleAuthSubmit(event) {
   event.preventDefault();
+  console.log('Auth Submit! Register Mode:', isRegisterMode);
+  
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
   const submitBtn = document.getElementById('auth-submit-btn');
@@ -1203,11 +1203,13 @@ async function handleAuthSubmit(event) {
 
   try {
     if (isRegisterMode) {
+      console.log('Starting Registration Flow...');
       const name = document.getElementById('auth-name').value || 'Elternteil';
       
       // 1. Sign up in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
       if (authError) throw authError;
+      console.log('Auth User Created!', authData.user?.id);
 
       let famId = null;
       let isAdmin = false;
@@ -1215,14 +1217,17 @@ async function handleAuthSubmit(event) {
       if (familyMode === 'create') {
         const familyName = document.getElementById('auth-family-name').value || 'Meine Familie';
         const inviteCode = familyName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+        console.log('Creating family:', familyName, 'with code:', inviteCode);
         
         const { data: familyData, error: famError } = await supabase.from('families').insert([{ name: familyName, invite_code: inviteCode }]).select().single();
         if (famError) throw famError;
         
         famId = familyData.id;
         isAdmin = true; // Creator is admin
+        console.log('Family created successfully:', famId);
       } else {
         const inviteCode = document.getElementById('auth-invite-code').value.trim();
+        console.log('Joining family with code:', inviteCode);
         const { data: existingFam, error: findFamError } = await supabase.from('families').select('*').eq('invite_code', inviteCode).single();
         
         if (findFamError || !existingFam) {
@@ -1231,10 +1236,12 @@ async function handleAuthSubmit(event) {
         
         famId = existingFam.id;
         isAdmin = false; // Joiner is not admin
+        console.log('Family joined successfully:', famId);
       }
 
       // 3. Create User Profile linked to auth_id
-      await supabase.from('users').insert([{
+      console.log('Creating user profile...');
+      const { error: profileError } = await supabase.from('users').insert([{
         auth_id: authData.user.id,
         family_id: famId,
         email: email,
@@ -1243,24 +1250,29 @@ async function handleAuthSubmit(event) {
         is_parent: true,
         is_admin: isAdmin
       }]);
+      if (profileError) throw profileError;
 
       // If email confirmation is enabled on the server, session is null here.
       // But we added a DB trigger to auto-confirm, so we can just log in immediately!
       if (!authData.session) {
+        console.log('Signing in newly created user...');
         await supabase.auth.signInWithPassword({ email, password });
       }
 
       showToast('Registrierung erfolgreich!');
     } else {
       // Login Mode
+      console.log('Starting Login Flow...');
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       showToast('Erfolgreich eingeloggt!');
     }
 
+    console.log('Auth Complete! Initializing Supabase Data...');
     initSupabase();
   } catch (error) {
-    alert('Fehler: ' + error.message);
+    console.error('Auth Error:', error);
+    alert('Fehler: ' + (error.message || 'Unbekannter Fehler bei der Registrierung/Login.'));
     submitBtn.disabled = false;
     submitBtn.textContent = isRegisterMode ? 'Registrieren & Weiter' : 'Einloggen';
   }
