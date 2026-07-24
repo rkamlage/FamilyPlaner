@@ -1,0 +1,1 @@
+const { createClient } = require(" @supabase/supabase-js\); const supabase = createClient(\https://flisqlldkquempspxztv.supabase.co\, \sb_publishable_de8l_MsFiw2cxQaMPDjygg_s0jkv_AU\); async function check() { const {data, error} = await supabase.from(\families\).select(\invite_code\).limit(1); console.log(\Data:\, data); console.log(\Error:\, error); } check();

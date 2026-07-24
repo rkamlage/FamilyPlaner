@@ -65,10 +65,11 @@ async function initSupabase() {
     state.activeProfile = userProfile.id; // User UUID from our DB
     currentFamilyId = userProfile.family_id;
     
-    // Fetch real family name
-    const { data: familyData } = await db.from('families').select('name').eq('id', currentFamilyId).single();
+    // Fetch real family name and invite code
+    const { data: familyData } = await db.from('families').select('name, invite_code').eq('id', currentFamilyId).single();
     if (familyData) {
       state.currentFamily = familyData.name;
+      state.familyInviteCode = familyData.invite_code || 'Wird geladen...';
     } else {
       state.currentFamily = 'Meine Familie';
     }
@@ -239,9 +240,9 @@ function renderSettings() {
       <h3>Familien-Verwaltung</h3>
       <p style="font-size:12px; margin-bottom:10px;">Dein aktueller Einladungscode für andere Familienmitglieder:</p>
       <div style="background:var(--bg-app); padding:10px; border-radius:8px; text-align:center; font-family:monospace; font-size:18px; font-weight:bold; letter-spacing:2px; margin-bottom:15px;">
-        ${familyCode}
+        ${state.familyInviteCode || 'Code fehlt'}
       </div>
-      <button class="btn btn-ghost full-width" onclick="alert('Code kopiert (Demo)')">Code kopieren</button>
+      <button class="btn btn-ghost full-width" onclick="navigator.clipboard.writeText('${state.familyInviteCode}'); alert('Code kopiert!')">Code kopieren</button>
     </div>
     
     <div class="card" style="margin-top: 15px;">
@@ -282,6 +283,7 @@ function renderApp() {
   renderConnectedFamilies();
   populateDropdowns();
   renderAdminSettings();
+  renderSettings();
 }
 
 function renderAdminSettings() {
@@ -829,6 +831,11 @@ function switchTab(tabId) {
   document.getElementById(tabId).classList.add('active');
   const navBtn = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
   if (navBtn) navBtn.classList.add('active');
+
+  // Auto-sync from cloud when switching tabs
+  if (currentFamilyId) {
+    fetchCloudData();
+  }
 }
 
 // --- Profile / Role Switcher ---
