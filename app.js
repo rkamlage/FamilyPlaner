@@ -76,7 +76,7 @@ const defaultState = {
   wishes: [],
   wishMatches: [],
   recurringHobbies: [],
-  calendarEvents: [],
+  calendarEvents: [], appointments: [], homeFilter: 'today',
   connectedFamilies: []
 };
 
@@ -151,11 +151,12 @@ async function initSupabase() {
 
 
 async function fetchCloudData() {
-  const [adhocRes, wishesRes, hobbiesRes, membersRes] = await Promise.all([
+  const [adhocRes, wishesRes, hobbiesRes, membersRes, apptRes] = await Promise.all([
     db.from('ad_hoc_requests').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
     db.from('wishes').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
     db.from('recurring_hobbies').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
-    db.from('users').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: true })
+    db.from('users').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: true }),
+    db.from('appointments').select('*').eq('family_id', currentFamilyId).order('date', { ascending: true })
   ]);
   
   if (membersRes.data && membersRes.data.length > 0) {
@@ -181,6 +182,9 @@ async function fetchCloudData() {
   
   if (hobbiesRes.data && hobbiesRes.data.length > 0) state.recurringHobbies = hobbiesRes.data.map(mapHobbyFromDB);
   else state.recurringHobbies = [];
+  
+  if (apptRes && apptRes.data) state.appointments = apptRes.data;
+  else state.appointments = [];
   
   // Build dynamic calendar events from wishes and hobbies
   const dynamicEvents = [];
@@ -486,6 +490,17 @@ function populateDropdowns() {
     adhocTarget.innerHTML = `<option value="Alle befreundeten Familien">🤝 Alle befreundeten Familien</option>`
       + state.connectedFamilies.map(f => `<option value="${f.name}">${f.avatar} ${f.name}</option>`).join('');
   }
+
+  // Appointment Dropdowns
+  const apptChild = document.getElementById('appt-child');
+  const apptBring = document.getElementById('appt-bring');
+  const apptGet = document.getElementById('appt-get');
+  const apptCaretaker = document.getElementById('appt-caretaker');
+  
+  if (apptChild) apptChild.innerHTML = `<option value="Familie">👨‍👩‍👧‍👦 Gesamte Familie</option>` + state.members.map(m => `<option value="${m.name}">${m.avatar} ${m.name}</option>`).join('');
+  if (apptBring) apptBring.innerHTML = `<option value="Keine Fahrt nötig">Keine Fahrt nötig</option>` + driverOptions;
+  if (apptGet) apptGet.innerHTML = `<option value="Keine Fahrt nötig">Keine Fahrt nötig</option>` + driverOptions.replace('Offen (Wer bringt?)', 'Offen (Wer holt?)');
+  if (apptCaretaker) apptCaretaker.innerHTML = `<option value="Niemand">Niemand</option>` + parents.map(m => `<option value="${m.name}">${m.avatar} ${m.name}</option>`).join('');
 }
 
 // Render Own Family Members List (Tab 5)
@@ -566,15 +581,20 @@ function openAddMemberModal() {
 }
 
 // Render Dashboard View
+
 function renderDashboard() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
   if (!curMember) return;
 
+  // Filter Date Helper
+  const filterDate = new Date();
+  let filterStr = state.homeFilter; // 'today', 'tomorrow', 'week', 'all'
+  
   // Pending Wish Approvals (Only visible to parents)
   const approvalWidget = document.getElementById('parent-approval-widget');
   const pendingWishes = state.wishes.filter(w => w.status === 'Ausstehend');
   
-  if (curMember.isParent && pendingWishes.length > 0) {
+  if (curMember.isParent && pendingWishes.length > 0 && filterStr === 'today') {
     approvalWidget.style.display = 'block';
     document.getElementById('pending-wish-count').textContent = `${pendingWishes.length} Prüfen`;
     document.getElementById('dashboard-pending-wishes').innerHTML = pendingWishes.map(w => `
@@ -583,7 +603,7 @@ function renderDashboard() {
           <span class="item-avatar">${w.avatar}</span>
           <div>
             <div class="item-title">${w.category} (für ${w.child})</div>
-            <div class="item-sub">💶 Kosten: ${w.cost} • ${w.desc}</div>
+            <div class="item-sub">💰 Kosten: ${w.cost} | ${w.desc}</div>
           </div>
         </div>
         <div class="wish-approval-actions">
@@ -593,7 +613,43 @@ function renderDashboard() {
       </div>
     `).join('');
   } else {
-    approvalWidget.style.display = 'none';
+    if(approvalWidget) approvalWidget.style.display = 'none';
+  }
+
+  // Appointments (Fixe Termine)
+  const apptContainer = document.getElementById('dashboard-appointments-list');
+  if (apptContainer) {
+    let filteredAppts = state.appointments;
+    // VERY simple filter logic based on date string comparison if possible, or just show all for now if filter is complex
+    
+    apptContainer.innerHTML = filteredAppts.map(a => {
+      const isMyResponsibility = (a.bring_driver === curMember.name || a.get_driver === curMember.name || a.caretaker === curMember.name);
+      return `
+        <div class="list-item ${isMyResponsibility ? 'highlight-item' : ''}" style="flex-direction:column; align-items:flex-start; border-left: 4px solid ${isMyResponsibility ? 'var(--primary)' : 'var(--border-color)'};">
+          <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-bottom:5px;">
+            <div class="list-item-left">
+              <span class="item-avatar">📅</span>
+              <div>
+                <div class="item-title">${a.title} (${a.child})</div>
+                <div class="item-sub">🕒 ${a.date} um ${a.time}</div>
+              </div>
+            </div>
+            ${isMyResponsibility ? '<span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:10px;">Deine Aufgabe!</span>' : ''}
+            ${curMember.isParent ? `<button class="btn btn-ghost" style="color:var(--danger);" onclick="deleteAppointment('${a.id}')">🗑️</button>` : ''}
+          </div>
+          <div style="font-size:11px; background:var(--bg-card); padding:6px; border-radius:4px; width:100%;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span>🚗 <strong>Hin:</strong> ${a.bring_driver}</span>
+              <span>🚗 <strong>Rück:</strong> ${a.get_driver}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span>👁️ <strong>Betreuung:</strong> ${a.caretaker}</span>
+            </div>
+            ${a.description ? `<div style="margin-top:4px; font-style:italic; color:var(--text-muted);">"${a.description}"</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   // Dashboard Carpool Driver Logistics Widget (Internal & External)
@@ -609,7 +665,7 @@ function renderDashboard() {
         <span class="item-avatar">${h.avatar}</span>
         <div>
           <div class="item-title">${h.title}</div>
-          <div class="item-sub">⏱ ${h.schedule}</div>
+          <div class="item-sub">📅 ${h.schedule}</div>
           <div class="item-sub" style="color:var(--primary); font-weight:600;">🚗 Hin: ${h.bringDriver} | 🚗 Rück: ${h.getDriver}</div>
         </div>
       </div>
@@ -628,6 +684,7 @@ function renderDashboard() {
 
   adhocContainer.innerHTML = state.adHocRequests.map(req => generateAdhocCard(req, curMember)).join('');
 }
+
 
 // Render Ad-Hoc Section (With Target Audience & Parent Cancel Veto)
 function renderAdHocList() {
@@ -982,21 +1039,6 @@ function openEditHobbyModal(id) {
   
   document.getElementById('edit-hobby-id').value = hobby.id;
   
-  // Populate options dynamically based on family members
-  const memberOptions = state.members.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-  const allOptions = `
-    <option value="Offen (Wer fährt?)">⚠️ Offen (Wer fährt?)</option>
-    <optgroup label="Unsere Familie">
-      ${memberOptions}
-    </optgroup>
-    <optgroup label="Verknüpfte Familien">
-      ${state.connectedFamilies.map(f => `<option value="${f.name}">${f.name}</option>`).join('')}
-    </optgroup>
-  `;
-  
-  document.getElementById('edit-hobby-bring').innerHTML = allOptions;
-  document.getElementById('edit-hobby-get').innerHTML = allOptions;
-  
   // Set existing values if possible
   document.getElementById('edit-hobby-bring').value = hobby.bringDriver;
   document.getElementById('edit-hobby-get').value = hobby.getDriver;
@@ -1019,6 +1061,7 @@ async function handleUpdateHobby(event) {
 
   closeModal('modal-edit-hobby');
   showToast('Fahrgemeinschaft wurde aktualisiert!');
+  fetchCloudData();
 }
 
 // --- Hobby Creation ---
@@ -1438,3 +1481,47 @@ async function deleteAdHoc(reqId) {
     showToast("Anfrage gelöscht.");
   }
 }
+
+window.setHomeFilter = function(filter, btnElement) {
+  state.homeFilter = filter;
+  const btns = document.getElementById('home-filters').querySelectorAll('.pill');
+  btns.forEach(b => b.classList.remove('active'));
+  btnElement.classList.add('active');
+  renderDashboard();
+};
+
+window.openNewAppointmentModal = function() {
+  populateDropdowns();
+  document.getElementById('modal-appointment').classList.add('active');
+};
+
+window.handleCreateAppointment = async function(event) {
+  event.preventDefault();
+  const title = document.getElementById('appt-title').value;
+  const child = document.getElementById('appt-child').value;
+  const date = document.getElementById('appt-date').value;
+  const time = document.getElementById('appt-time').value;
+  const bring = document.getElementById('appt-bring').value;
+  const get = document.getElementById('appt-get').value;
+  const caretaker = document.getElementById('appt-caretaker').value;
+  const desc = document.getElementById('appt-desc').value;
+
+  if (currentFamilyId) {
+    await db.from('appointments').insert([{
+      family_id: currentFamilyId,
+      title, child, date, time, bring_driver: bring, get_driver: get, caretaker, description: desc
+    }]);
+  }
+
+  closeModal('modal-appointment');
+  showToast('Termin wurde gespeichert!');
+  fetchCloudData();
+};
+
+window.deleteAppointment = async function(id) {
+  if (confirm("Möchtest du diesen Termin wirklich löschen?")) {
+    await db.from('appointments').delete().eq('id', id);
+    fetchCloudData();
+    showToast("Termin gelöscht.");
+  }
+};

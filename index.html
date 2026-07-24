@@ -65,7 +65,22 @@
       
       <!-- TAB 1: DASHBOARD / HEUTE -->
       <section id="tab-dashboard" class="tab-content active">
-        <!-- Mode Announcement Banner -->
+  <div class="section-title-bar" style="margin-bottom: 15px;">
+    <div>
+      <h2>🏠 Home</h2>
+      <p>Familien-Überblick & Termine</p>
+    </div>
+    <button class="btn btn-primary" onclick="openNewAppointmentModal()">+ Neuer Termin</button>
+  </div>
+
+  <div class="filter-pills" style="margin-bottom: 15px;" id="home-filters">
+    <button class="pill active" onclick="setHomeFilter('today', this)">Heute</button>
+    <button class="pill" onclick="setHomeFilter('tomorrow', this)">Morgen</button>
+    <button class="pill" onclick="setHomeFilter('week', this)">Diese Woche</button>
+    <button class="pill" onclick="setHomeFilter('all', this)">Alle</button>
+  </div>
+  
+  <!-- Mode Announcement Banner -->
         <div class="mode-banner" id="mode-banner">
           <div class="banner-icon">🛡️</div>
           <div class="banner-text">
@@ -312,7 +327,7 @@
             </div>
             
             <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.19</strong></span>
+              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.20</strong></span>
             </div>
           </div>
         </div>
@@ -324,7 +339,7 @@
     <nav class="bottom-nav">
       <button class="nav-item active" data-tab="tab-dashboard" onclick="switchTab('tab-dashboard')">
         <span class="nav-icon">🏠</span>
-        <span class="nav-label">Heute</span>
+        <span class="nav-label">Home</span>
       </button>
       <button class="nav-item" data-tab="tab-adhoc" onclick="switchTab('tab-adhoc')">
         <span class="nav-icon">⚡</span>
@@ -733,7 +748,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=20"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -745,7 +760,65 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.19");
+    versionDisplays.forEach(el => el.textContent = "v0.0.20");
   </script>
-</body>
+
+    <!-- New Appointment Modal -->
+    <div id="modal-appointment" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>📅 Neuer Termin</h3>
+          <button class="btn-close" onclick="closeModal('modal-appointment')">✕</button>
+        </div>
+        <form id="form-appointment" onsubmit="handleCreateAppointment(event)" class="modal-body">
+          <div class="form-group">
+            <label>Titel (z.B. Arzttermin)</label>
+            <input type="text" id="appt-title" class="form-input" placeholder="Worum geht es?" required>
+          </div>
+
+          <div class="form-group">
+            <label>Für wen? (Kind/Familie)</label>
+            <select id="appt-child" class="form-input"></select>
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1;">
+              <label>Datum</label>
+              <input type="date" id="appt-date" class="form-input" required>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Uhrzeit</label>
+              <input type="time" id="appt-time" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Hin-Fahrt (Wer bringt?)</label>
+            <select id="appt-bring" class="form-input"></select>
+          </div>
+
+          <div class="form-group">
+            <label>Rück-Fahrt (Wer holt?)</label>
+            <select id="appt-get" class="form-input"></select>
+          </div>
+
+          <div class="form-group">
+            <label>Betreuung vor Ort</label>
+            <select id="appt-caretaker" class="form-input"></select>
+          </div>
+
+          <div class="form-group">
+            <label>Notizen / Beschreibung</label>
+            <textarea id="appt-desc" class="form-input" rows="2" placeholder="Optionale Infos..."></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('modal-appointment')">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Termin speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+
 </html>
