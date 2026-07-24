@@ -697,7 +697,7 @@ function renderRecurringHobbies() {
         ` : ''}
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 // Render Wishes Section with Approval Actions
