@@ -3,7 +3,15 @@
    ========================================================================== */
 
 // APP CONFIGURATION
-const APP_VERSION = "v0.0.3";
+const APP_VERSION = "v0.0.5";
+
+// Set App Version in UI immediately before anything else can crash
+try {
+  const versionDisplays = document.querySelectorAll('.app-version-display');
+  versionDisplays.forEach(el => el.textContent = APP_VERSION);
+} catch (e) {
+  console.error(e);
+}
 
 // --- Application State ---
 const defaultState = {
@@ -209,7 +217,7 @@ async function initSupabase() {
   if (!supabase) return;
   
   // Check for Child PIN Session first
-  const childSession = localStorage.getItem('familyplaner_child_session');
+  const childSession = safeStorageGet('familyplaner_child_session');
   if (childSession) {
     const data = JSON.parse(childSession);
     currentFamilyId = data.familyId;
@@ -268,9 +276,7 @@ async function initSupabase() {
   }
 }
 
-// Set App Version in UI
-const versionDisplays = document.querySelectorAll('.app-version-display');
-versionDisplays.forEach(el => el.textContent = APP_VERSION);
+
 
 async function fetchCloudData() {
   const [adhocRes, wishesRes, hobbiesRes] = await Promise.all([
@@ -368,11 +374,11 @@ function setAppTheme(themeMode) {
     if (btn) btn.classList.add('active');
   }
 
-  localStorage.setItem('familyplaner_theme', themeMode);
+  safeStorageSet('familyplaner_theme', themeMode);
 }
 
 // Restore saved theme on startup
-const savedTheme = localStorage.getItem('familyplaner_theme') || 'auto';
+const savedTheme = safeStorageGet('familyplaner_theme') || 'auto';
 setTimeout(() => setAppTheme(savedTheme), 100);
 
 // DOM Elements
@@ -1284,7 +1290,7 @@ async function handleChildLogin(event) {
     }
     
     // Store localized child session
-    localStorage.setItem('familyplaner_child_session', JSON.stringify({
+    safeStorageSet('familyplaner_child_session', JSON.stringify({
       familyId: family.id,
       familyName: family.name,
       childName: name
@@ -1297,8 +1303,30 @@ async function handleChildLogin(event) {
   }
 }
 
+// --- Safe Storage Wrapper ---
+function safeStorageGet(key) {
+  try { return localStorage.getItem(key); }
+  catch(e) { return null; }
+}
+function safeStorageSet(key, value) {
+  try { localStorage.setItem(key, value); }
+  catch(e) { console.warn('Storage blocked', e); }
+}
+function safeStorageRemove(key) {
+  try { localStorage.removeItem(key); }
+  catch(e) { console.warn('Storage blocked', e); }
+}
+
+// Load State from LocalStorage (MVP Persistence)
+function loadState() {
+  const saved = safeStorageGet('familyplaner_state');
+  if (saved) {
+    state = JSON.parse(saved);
+  }
+}
+
 async function logout() {
-  localStorage.removeItem('familyplaner_child_session');
+  safeStorageRemove('familyplaner_child_session');
   await supabase.auth.signOut();
   window.location.reload();
 }
