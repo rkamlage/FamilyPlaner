@@ -205,7 +205,23 @@ const state = Object.assign({}, defaultState);
 async function initSupabase() {
   if (!supabase) return;
   
-  // Check for active session
+  // Check for Child PIN Session first
+  const childSession = localStorage.getItem('familyplaner_child_session');
+  if (childSession) {
+    const data = JSON.parse(childSession);
+    currentFamilyId = data.familyId;
+    state.activeProfile = 'child_independent'; // Simulate active child
+    
+    // Hide Auth Overlay
+    document.getElementById('auth-overlay').style.display = 'none';
+    
+    // Fetch data and subscribe
+    await fetchCloudData();
+    setupRealtimeSubscriptions();
+    return;
+  }
+
+  // Check for active parent session
   const { data: { session } } = await supabase.auth.getSession();
   
   if (!session) {
@@ -1134,12 +1150,31 @@ function showToast(message) {
 
 // --- Authentication & Session Handlers ---
 let isRegisterMode = false;
+let familyMode = 'create'; // 'create' or 'join'
 
-function toggleAuthMode() {
-  isRegisterMode = !isRegisterMode;
+function setAuthMode(mode) {
+  isRegisterMode = (mode === 'register');
+  
+  document.getElementById('tab-login').className = isRegisterMode ? 'btn btn-ghost full-width' : 'btn btn-primary full-width';
+  document.getElementById('tab-register').className = isRegisterMode ? 'btn btn-primary full-width' : 'btn btn-ghost full-width';
+  
   document.getElementById('auth-register-fields').style.display = isRegisterMode ? 'flex' : 'none';
-  document.getElementById('auth-submit-btn').textContent = isRegisterMode ? 'Registrieren & Familie gründen' : 'Einloggen';
-  document.querySelector('#auth-form p a').textContent = isRegisterMode ? 'Zum Login' : 'Registrieren';
+  document.getElementById('auth-submit-btn').textContent = isRegisterMode ? 'Registrieren & Weiter' : 'Einloggen';
+}
+
+function toggleFamilyMode() {
+  const modes = document.getElementsByName('family_mode');
+  for (let m of modes) {
+    if (m.checked) familyMode = m.value;
+  }
+  
+  if (familyMode === 'create') {
+    document.getElementById('auth-group-family-create').style.display = 'block';
+    document.getElementById('auth-group-family-join').style.display = 'none';
+  } else {
+    document.getElementById('auth-group-family-create').style.display = 'none';
+    document.getElementById('auth-group-family-join').style.display = 'block';
+  }
 }
 
 async function handleAuthSubmit(event) {
@@ -1154,26 +1189,44 @@ async function handleAuthSubmit(event) {
   try {
     if (isRegisterMode) {
       const name = document.getElementById('auth-name').value || 'Elternteil';
-      const familyName = document.getElementById('auth-family-name').value || 'Meine Familie';
-
+      
       // 1. Sign up in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
       if (authError) throw authError;
 
-      // 2. Create Family
-      const inviteCode = familyName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
-      const { data: familyData, error: famError } = await supabase.from('families').insert([{ name: familyName, invite_code: inviteCode }]).select().single();
-      if (famError) throw famError;
+      let famId = null;
+      let isAdmin = false;
 
-      // 3. Create User Profile linked to auth_id (Make them Admin)
+      if (familyMode === 'create') {
+        const familyName = document.getElementById('auth-family-name').value || 'Meine Familie';
+        const inviteCode = familyName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+        
+        const { data: familyData, error: famError } = await supabase.from('families').insert([{ name: familyName, invite_code: inviteCode }]).select().single();
+        if (famError) throw famError;
+        
+        famId = familyData.id;
+        isAdmin = true; // Creator is admin
+      } else {
+        const inviteCode = document.getElementById('auth-invite-code').value.trim();
+        const { data: existingFam, error: findFamError } = await supabase.from('families').select('*').eq('invite_code', inviteCode).single();
+        
+        if (findFamError || !existingFam) {
+          throw new Error('Familie mit diesem Einladungs-Code nicht gefunden!');
+        }
+        
+        famId = existingFam.id;
+        isAdmin = false; // Joiner is not admin
+      }
+
+      // 3. Create User Profile linked to auth_id
       await supabase.from('users').insert([{
         auth_id: authData.user.id,
-        family_id: familyData.id,
+        family_id: famId,
         email: email,
         name: name,
         role: 'parent',
         is_parent: true,
-        is_admin: true
+        is_admin: isAdmin
       }]);
 
       showToast('Registrierung erfolgreich!');
@@ -1184,16 +1237,53 @@ async function handleAuthSubmit(event) {
       showToast('Erfolgreich eingeloggt!');
     }
 
-    // Refresh UI
     initSupabase();
   } catch (error) {
     alert('Fehler: ' + error.message);
     submitBtn.disabled = false;
-    submitBtn.textContent = isRegisterMode ? 'Registrieren & Familie gründen' : 'Einloggen';
+    submitBtn.textContent = isRegisterMode ? 'Registrieren & Weiter' : 'Einloggen';
+  }
+}
+
+// --- Child PIN Login ---
+function openChildLogin() {
+  document.getElementById('modal-child-login').classList.add('active');
+}
+
+async function handleChildLogin(event) {
+  event.preventDefault();
+  const inviteCode = document.getElementById('child-invite-code').value.trim();
+  const name = document.getElementById('child-name').value.trim();
+  const pin = document.getElementById('child-pin').value.trim();
+  
+  if (pin !== '1234') { // MVP Simplified PIN Check for demo
+    alert('Falsche PIN. Für die Demo bitte "1234" verwenden.');
+    return;
+  }
+  
+  try {
+    const { data: family, error } = await supabase.from('families').select('id, name').eq('invite_code', inviteCode).single();
+    if (error || !family) {
+      alert('Familie nicht gefunden. Einladungs-Code überprüfen!');
+      return;
+    }
+    
+    // Store localized child session
+    localStorage.setItem('familyplaner_child_session', JSON.stringify({
+      familyId: family.id,
+      familyName: family.name,
+      childName: name
+    }));
+    
+    closeModal('modal-child-login');
+    window.location.reload(); // Reload to trigger initSupabase and load child view
+  } catch (err) {
+    console.error(err);
   }
 }
 
 async function logout() {
+  localStorage.removeItem('familyplaner_child_session');
   await supabase.auth.signOut();
   window.location.reload();
 }
