@@ -1,10 +1,10 @@
 // Service Worker for FamilyPlaner PWA support - Network First Strategy
-const CACHE_NAME = 'familyplaner-v4';
+const CACHE_NAME = 'familyplaner-v5';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
+  './styles.css?v=2',
+  './app.js?v=2',
   './manifest.json',
   './supabaseClient.js'
 ];
@@ -42,8 +42,8 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() => {
-        // Offline? Fallback to cache
-        return caches.match(event.request);
+        // Offline? Fallback to cache, ignoring query parameters so ?v=2 can match the base file if needed
+        return caches.match(event.request, { ignoreSearch: true });
       })
   );
 });

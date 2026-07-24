@@ -266,10 +266,8 @@ async function initSupabase() {
 }
 
 // Set App Version in UI
-document.addEventListener('DOMContentLoaded', () => {
-  const versionDisplays = document.querySelectorAll('.app-version-display');
-  versionDisplays.forEach(el => el.textContent = APP_VERSION);
-});
+const versionDisplays = document.querySelectorAll('.app-version-display');
+versionDisplays.forEach(el => el.textContent = APP_VERSION);
 
 async function fetchCloudData() {
   const [adhocRes, wishesRes, hobbiesRes] = await Promise.all([
@@ -375,21 +373,19 @@ const savedTheme = localStorage.getItem('familyplaner_theme') || 'auto';
 setTimeout(() => setAppTheme(savedTheme), 100);
 
 // APP CONFIGURATION
-const APP_VERSION = "v0.0.1";
+const APP_VERSION = "v0.0.2";
 
 // DOM Elements
 const tabs = document.querySelectorAll('.tab-content');
 const navButtons = document.querySelectorAll('.nav-bar button');
 
 // --- DOM Initialization & Render ---
-document.addEventListener('DOMContentLoaded', () => {
-  initSupabase();
-  renderApp();
-  
-  setTimeout(() => {
-    showToast('✨ Wilkommen bei FamilyPlaner! Jonas (Fam. Weber) möchte auch schwimmen gehen!');
-  }, 1500);
-});
+initSupabase();
+renderApp();
+
+setTimeout(() => {
+  showToast('✨ Wilkommen bei FamilyPlaner! Jonas (Fam. Weber) möchte auch schwimmen gehen!');
+}, 1500);
 
 // Main Render Dispatcher
 function renderApp() {
