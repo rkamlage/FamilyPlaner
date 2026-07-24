@@ -246,7 +246,7 @@
             <h2>⚙️ Einstellungen & Familie</h2>
             <p>Design/Theme, Standard-Einstellungen & Familienmitglieder</p>
           </div>
-          <button class="btn btn-primary" onclick="openAddMemberModal()">+ Mitglied hinzufügen</button>
+          <button id="btn-add-member" class="btn btn-primary" onclick="openAddMemberModal()">+ Mitglied hinzufügen</button>
         </div>
 
         <!-- Debug Area -->
@@ -271,7 +271,7 @@
         </div>
 
         <!-- Own Family Card -->
-        <div class="section-card" style="border-color: var(--primary);">
+        <div id="card-settings-own-family" class="section-card" style="border-color: var(--primary);">
           <div class="card-header">
             <h3>🏠 Familienmitglieder von <span id="family-title-name">...</span></h3>
             <span class="badge">Eigene Familie</span>
@@ -283,7 +283,7 @@
         </div>
 
         <!-- Kids Permissions Card -->
-        <div class="section-card">
+        <div id="card-settings-kids-permissions" class="section-card">
           <div class="card-header">
             <h3>🔑 Rechte-Verwaltung für Kinder</h3>
             <span class="badge" style="background: var(--bg-card); color: var(--primary);">Eltern-Kontrolle</span>
@@ -295,7 +295,7 @@
         </div>
 
         <!-- Connected Families Card -->
-        <div class="section-card">
+        <div id="card-settings-connected-families" class="section-card">
           <div class="card-header">
             <h3>🤝 Befreundete Familien</h3>
             <button class="btn btn-outline btn-sm" onclick="showConnectModal()">+ Familie verknüpfen</button>
@@ -742,7 +742,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=14"></script>
+  <script src="app.js?v=15"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -754,7 +754,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.14");
+    versionDisplays.forEach(el => el.textContent = "v0.0.15");
   </script>
 </body>
 </html>

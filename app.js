@@ -281,6 +281,24 @@ function renderApp() {
   renderPermissions();
   renderConnectedFamilies();
   populateDropdowns();
+  renderAdminSettings();
+}
+
+function renderAdminSettings() {
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  if (!curMember) return;
+  
+  const displayStyle = curMember.isParent ? 'block' : 'none';
+  
+  const btnAddMember = document.getElementById('btn-add-member');
+  const cardOwnFamily = document.getElementById('card-settings-own-family');
+  const cardKidsPerms = document.getElementById('card-settings-kids-permissions');
+  const cardConnected = document.getElementById('card-settings-connected-families');
+  
+  if (btnAddMember) btnAddMember.style.display = displayStyle;
+  if (cardOwnFamily) cardOwnFamily.style.display = displayStyle;
+  if (cardKidsPerms) cardKidsPerms.style.display = displayStyle;
+  if (cardConnected) cardConnected.style.display = displayStyle;
 }
 
 // Render Header & Profile Badge
@@ -466,12 +484,17 @@ function renderDashboard() {
   document.getElementById('adhoc-count-badge').textContent = `${state.adHocRequests.length} Aktiv`;
   document.getElementById('nav-adhoc-badge').textContent = state.adHocRequests.length;
 
-  adhocContainer.innerHTML = state.adHocRequests.map(req => `
-    <div class="list-item">
+  adhocContainer.innerHTML = state.adHocRequests.map(req => {
+    // Show a small warning to parents if the creator is a child
+    const isChildRequest = !state.members.find(m => m.name === req.creator && m.isParent);
+    const showParentWarning = curMember.isParent && isChildRequest;
+
+    return `
+    <div class="list-item" style="${showParentWarning ? 'border-left: 3px solid var(--rose);' : ''}">
       <div class="list-item-left">
         <span class="item-avatar">${req.avatar}</span>
         <div>
-          <div class="item-title">${req.activity}</div>
+          <div class="item-title">${req.activity} ${showParentWarning ? '<span style="color:var(--rose); font-size:11px;">(Kind-Anfrage)</span>' : ''}</div>
           <div class="item-sub">📍 ${req.location} • ⏰ ${req.time}</div>
           <div style="display:flex; gap:4px; margin-top:3px; flex-wrap:wrap;">
             ${req.targetAudience ? `<span class="target-audience-pill">🎯 ${req.targetAudience}</span>` : ''}
@@ -637,7 +660,7 @@ function renderWishesList() {
         <div class="list-item-left">
           <span class="item-avatar">${w.avatar}</span>
           <div>
-            <div class="item-title">${w.category} (für ${w.child})</div>
+            <div class="item-title">${w.status === 'Ausstehend' ? '🔒 ' : ''}${w.category} (für ${w.child})</div>
             <div class="item-sub">${w.desc}</div>
             ${w.cost ? `<div class="item-sub" style="margin-top:2px;"><span class="cost-badge">💶 ${w.cost}</span></div>` : ''}
           </div>
