@@ -196,38 +196,109 @@ const defaultState = {
   ]
 };
 
-// --- LocalStorage & Live Sync Engine ---
-function loadState() {
-  const saved = localStorage.getItem('familyplaner_state');
-  if (saved) {
-    try { return JSON.parse(saved); } catch (e) { console.error(e); }
+// --- Supabase Cloud & Live Sync Engine ---
+const supabase = window.supabaseClient;
+let currentFamilyId = null;
+
+const state = Object.assign({}, defaultState);
+
+async function initSupabase() {
+  if (!supabase) return;
+  
+  // 1. Get or Create Default Family
+  let { data: families } = await supabase.from('families').select('*').eq('invite_code', 'MUELLER-2026-FP').limit(1);
+  if (!families || families.length === 0) {
+    const { data: newFam } = await supabase.from('families').insert([{ name: 'Familie Müller', invite_code: 'MUELLER-2026-FP' }]).select();
+    if (newFam) currentFamilyId = newFam[0].id;
+  } else {
+    currentFamilyId = families[0].id;
   }
-  return defaultState;
+
+  // 2. Fetch Initial Data
+  if (currentFamilyId) {
+    await fetchCloudData();
+    // 3. Subscribe to Realtime changes
+    setupRealtimeSubscriptions();
+  }
 }
 
-function saveState() {
-  localStorage.setItem('familyplaner_state', JSON.stringify(state));
-  // Broadcast update to other tabs/windows for instant sync simulation
-  if (window.BroadcastChannel) {
-    const bc = new BroadcastChannel('familyplaner_live_sync');
-    bc.postMessage({ type: 'STATE_UPDATED', timestamp: Date.now() });
-  }
+async function fetchCloudData() {
+  const [adhocRes, wishesRes, hobbiesRes] = await Promise.all([
+    supabase.from('ad_hoc_requests').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
+    supabase.from('wishes').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
+    supabase.from('recurring_hobbies').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false })
+  ]);
+  
+  if (adhocRes.data && adhocRes.data.length > 0) state.adHocRequests = adhocRes.data.map(mapAdHocFromDB);
+  if (wishesRes.data && wishesRes.data.length > 0) state.wishes = wishesRes.data.map(mapWishFromDB);
+  if (hobbiesRes.data && hobbiesRes.data.length > 0) state.recurringHobbies = hobbiesRes.data.map(mapHobbyFromDB);
+  
+  renderApp();
 }
 
-const state = loadState();
+function setupRealtimeSubscriptions() {
+  supabase.channel('public:family_planer')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'ad_hoc_requests' }, payload => {
+      fetchCloudData();
+      showToast('⚡ Live-Sync: Neue Spontan-Anfrage empfangen!');
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'wishes' }, payload => {
+      fetchCloudData();
+      showToast('⚡ Live-Sync: Wunschliste aktualisiert!');
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'recurring_hobbies' }, payload => {
+      fetchCloudData();
+    })
+    .subscribe();
+}
 
-// Listen for Live Sync Messages
-if (window.BroadcastChannel) {
-  const bc = new BroadcastChannel('familyplaner_live_sync');
-  bc.onmessage = (event) => {
-    if (event.data && event.data.type === 'STATE_UPDATED') {
-      const refreshed = loadState();
-      Object.assign(state, refreshed);
-      renderApp();
-      showToast('⚡ Live-Sync: Daten vom anderen Gerät empfangen!');
-    }
+// Mapper functions (DB schema to UI format)
+function mapAdHocFromDB(dbRow) {
+  return {
+    id: dbRow.id,
+    creator: dbRow.creator_name,
+    avatar: dbRow.creator_name.includes('Maya') ? '👧' : '👦',
+    activity: dbRow.activity,
+    time: dbRow.scheduled_time,
+    location: dbRow.location,
+    targetAudience: dbRow.target_audience,
+    cost: dbRow.cost,
+    parentPresent: dbRow.parent_present,
+    status: dbRow.status === 'active' ? 'Aktiv' : (dbRow.status === 'cancelled' ? 'Storniert' : 'Beendet'),
+    rsvps: [] // Simplified for MVP
   };
 }
+
+function mapWishFromDB(dbRow) {
+  return {
+    id: dbRow.id,
+    child: dbRow.child_name,
+    avatar: dbRow.child_name.includes('Maya') ? '👧' : '👦',
+    category: dbRow.category,
+    desc: dbRow.description,
+    cost: dbRow.cost,
+    status: dbRow.status === 'approved' ? 'Genehmigt' : (dbRow.status === 'declined' ? 'Abgelehnt' : 'Ausstehend'),
+    dateAdded: 'Zuletzt aktualisiert'
+  };
+}
+
+function mapHobbyFromDB(dbRow) {
+  return {
+    id: dbRow.id,
+    child: dbRow.child_name,
+    avatar: dbRow.child_name.includes('Maya') ? '👧' : '👦',
+    title: dbRow.title,
+    schedule: dbRow.schedule,
+    location: dbRow.location,
+    bringDriver: dbRow.bring_driver,
+    getDriver: dbRow.get_driver,
+    parentPresent: dbRow.parent_present,
+    status: dbRow.status
+  };
+}
+
+// Backwards compatibility dummy for local UI toggles (like changing profiles)
+function saveState() {}
 
 // Theme Switcher Handler
 function setAppTheme(themeMode) {
@@ -256,6 +327,7 @@ setTimeout(() => setAppTheme(savedTheme), 100);
 
 // --- DOM Initialization & Render ---
 document.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
   renderApp();
   
   setTimeout(() => {
@@ -806,7 +878,7 @@ function closeModal(modalId) {
 }
 
 // --- Hobby Creation ---
-function handleCreateHobby(event) {
+async function handleCreateHobby(event) {
   event.preventDefault();
   const child = document.getElementById('hobby-child-select').value;
   const title = document.getElementById('hobby-title').value;
@@ -816,28 +888,27 @@ function handleCreateHobby(event) {
   const get = document.getElementById('hobby-get').value;
   const parentPresent = document.getElementById('hobby-parent-present').value;
 
-  const newHobby = {
-    id: `hob-${Date.now()}`,
-    child: child,
-    avatar: child.includes('Nick') ? '👦' : (child.includes('Maya') ? '👧' : '👦'),
-    title: title,
-    schedule: time,
-    location: location,
-    bringDriver: bring,
-    getDriver: get,
-    parentPresent: parentPresent,
-    status: (bring.includes('Offen') || get.includes('Offen')) ? 'Fahrt offen ⚠️' : 'Fahrten geregelt ✅'
-  };
+  if (currentFamilyId) {
+    await supabase.from('recurring_hobbies').insert([{
+      family_id: currentFamilyId,
+      child_name: child,
+      title: title,
+      schedule: time,
+      location: location,
+      bring_driver: bring,
+      get_driver: get,
+      parent_present: parentPresent,
+      status: (bring.includes('Offen') || get.includes('Offen')) ? 'Fahrt offen ⚠️' : 'Fahrten geregelt ✅'
+    }]);
+  }
 
-  state.recurringHobbies.unshift(newHobby);
-  saveState();
   closeModal('modal-hobby');
-  renderApp();
+  // UI updates automatically via Realtime WebSockets subscription
   showToast(`🏆 Wöchentliches Hobby "${title}" gespeichert!`);
 }
 
 // --- Ad-Hoc Creation & Response ---
-function handleCreateAdHoc(event) {
+async function handleCreateAdHoc(event) {
   event.preventDefault();
   const creator = document.getElementById('adhoc-creator-select').value;
   const activity = document.getElementById('adhoc-activity').value;
@@ -847,26 +918,21 @@ function handleCreateAdHoc(event) {
   const cost = document.getElementById('adhoc-cost').value;
   const parentPresent = document.getElementById('adhoc-parent-present').value;
 
-  const newReq = {
-    id: `adhoc-${Date.now()}`,
-    creator: creator,
-    avatar: creator.includes('Nick') ? '👦' : (creator.includes('Maya') ? '👧' : '👨‍👩‍👧‍👦'),
-    activity: `⚡ ${activity}`,
-    time: time,
-    location: location,
-    targetAudience: targetAudience,
-    cost: cost || null,
-    parentPresent: parentPresent,
-    status: 'Aktiv',
-    rsvps: [
-      { family: 'Familie Weber', name: 'Jonas', status: 'Angefragt 📩', avatar: '👦' }
-    ]
-  };
+  if (currentFamilyId) {
+    await supabase.from('ad_hoc_requests').insert([{
+      family_id: currentFamilyId,
+      creator_name: creator,
+      activity: `⚡ ${activity}`,
+      scheduled_time: time,
+      location: location,
+      target_audience: targetAudience,
+      cost: cost || null,
+      parent_present: parentPresent,
+      status: 'active'
+    }]);
+  }
 
-  state.adHocRequests.unshift(newReq);
-  saveState();
   closeModal('modal-adhoc');
-  renderApp();
   showToast(`⚡ Spontan-Anfrage an ${targetAudience} gesendet!`);
 }
 
@@ -888,7 +954,7 @@ function respondAdHoc(reqId, answerText) {
 }
 
 // --- Wish Creation ---
-function handleCreateWish(event) {
+async function handleCreateWish(event) {
   event.preventDefault();
   const child = document.getElementById('wish-child-select').value;
   const category = document.getElementById('wish-category').value;
@@ -896,23 +962,22 @@ function handleCreateWish(event) {
   const cost = document.getElementById('wish-cost').value;
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
 
-  const newWish = {
-    id: `wish-${Date.now()}`,
-    child: child,
-    avatar: child.includes('Nick') ? '👦' : (child.includes('Maya') ? '👧' : '👧'),
-    category: category,
-    desc: desc || 'Keine Zusatzbeschreibung',
-    cost: cost || 'Kostenlos',
-    status: curMember.isParent ? 'Genehmigt' : 'Ausstehend',
-    dateAdded: 'Gerade eben'
-  };
+  const status = curMember.isParent ? 'approved' : 'pending';
 
-  state.wishes.unshift(newWish);
-  saveState();
+  if (currentFamilyId) {
+    await supabase.from('wishes').insert([{
+      family_id: currentFamilyId,
+      child_name: child,
+      category: category,
+      description: desc || 'Keine Zusatzbeschreibung',
+      cost: cost || 'Kostenlos',
+      status: status
+    }]);
+  }
+
   closeModal('modal-wish');
-  renderApp();
 
-  if (newWish.status === 'Ausstehend') {
+  if (status === 'pending') {
     showToast(`✨ Wunsch "${category}" eingetragen! Wartet auf Eltern-Freigabe.`);
   } else {
     showToast(`✨ Wunsch "${category}" eingetragen und genehmigt!`);

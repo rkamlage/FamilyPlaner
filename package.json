@@ -1,0 +1,26 @@
+{
+  "name": "familyplaner",
+  "version": "1.0.0",
+  "description": "Ein moderner, intelligenter Familien-Kalender und Aktivitätsplaner für Android und Web. **FamilyPlaner** hilft Familien, nicht nur den eigenen Alltag zu organisieren, sondern sich mühelos mit befreundeten Familien zu vernetzen, spontane Verabredungen der Kinder (\"Ad-hoc Anfragen\") zu koordinieren und gemeinsame Wünsche automatisch abzugleichen.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rkamlage/FamilyPlaner.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rkamlage/FamilyPlaner/issues"
+  },
+  "homepage": "https://github.com/rkamlage/FamilyPlaner#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.8",
+    "dotenv": "^17.4.2",
+    "pg": "^8.22.0"
+  }
+}
