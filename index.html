@@ -25,7 +25,7 @@
         </div>
       </div>
       <div class="header-right">
-        <!-- Role/Profile Switcher Button -->
+        <!-- Profile Switcher Button -->
         <button class="profile-switcher-btn" id="profile-switcher-btn" onclick="toggleProfileModal()">
           <span class="profile-avatar" id="active-avatar">👨</span>
           <div class="profile-info">
@@ -51,7 +51,7 @@
           </div>
         </div>
 
-        <!-- Quick Actions Bar -->
+        <!-- Quick Actions Grid -->
         <div class="quick-actions-grid">
           <button class="action-card primary" onclick="openAdHocModal()">
             <span class="action-icon">⚡</span>
@@ -63,6 +63,17 @@
             <span class="action-label">Wunsch eintragen</span>
             <span class="action-sub">Kino, Schwimmen...</span>
           </button>
+        </div>
+
+        <!-- Pending Wish Approvals Widget (Visible for Parents) -->
+        <div class="section-card" id="parent-approval-widget">
+          <div class="card-header">
+            <h3>📋 Ausstehende Wunsch-Freigaben</h3>
+            <span class="badge pulse" id="pending-wish-count">1 Prüfen</span>
+          </div>
+          <div id="dashboard-pending-wishes" class="card-list">
+            <!-- Dynamic Content via app.js -->
+          </div>
         </div>
 
         <!-- Active Ad-Hoc Shoutouts Widget -->
@@ -119,7 +130,7 @@
         <div class="section-title-bar">
           <div>
             <h2>✨ Kinder-Wunschliste</h2>
-            <p>Wünsche der Kinder & automatische Treffer mit befreundeten Familien</p>
+            <p>Wünsche der Kinder & elterliche Bestätigung</p>
           </div>
           <button class="btn btn-primary" onclick="openWishModal()">+ Wunsch eintragen</button>
         </div>
@@ -129,8 +140,8 @@
           <div class="alert-header">
             <span class="icon">💡</span>
             <div>
-              <strong>Automatische Termin-Vorschläge</strong>
-              <p>Wenn zwei Kinder den gleichen Wunsch haben, schlagen wir ein Treffen vor!</p>
+              <strong>Automatische Match-Vorschläge</strong>
+              <p>Wünsche, die auch befreundete Kinder haben</p>
             </div>
           </div>
           <div id="wish-matches-container" class="matches-grid">
@@ -144,12 +155,12 @@
         </div>
       </section>
 
-      <!-- TAB 4: KALENDER & CARPOOLING -->
+      <!-- TAB 4: KALENDER, KOSTEN & CARPOOLING -->
       <section id="tab-calendar" class="tab-content">
         <div class="section-title-bar">
           <div>
-            <h2>📅 Familienkalender</h2>
-            <p>Termine, Verabredungen & Fahrgemeinschaften</p>
+            <h2>📅 Familienkalender & Kosten</h2>
+            <p>Termine, optionale Kosten & Fahrgemeinschaften</p>
           </div>
         </div>
 
@@ -166,16 +177,29 @@
         </div>
       </section>
 
-      <!-- TAB 5: BEFREUNDETE FAMILIEN -->
+      <!-- TAB 5: FAMILIE & RECHTE-VERWALTUNG -->
       <section id="tab-friends" class="tab-content">
         <div class="section-title-bar">
           <div>
-            <h2>🤝 Befreundete Familien</h2>
-            <p>Vernetzte Familien für gemeinsamen Kalender & Spontan-Anfragen</p>
+            <h2>⚙️ Familien-Verwaltung & Rechte</h2>
+            <p>Befreundete Familien & Kinder-Berechtigungen</p>
           </div>
           <button class="btn btn-secondary" onclick="showConnectModal()">+ Familie verknüpfen</button>
         </div>
 
+        <!-- Kid Rights / Permissions Card -->
+        <div class="section-card highlight-card">
+          <div class="card-header">
+            <h3>🔑 Rechte-Verwaltung für Kinder</h3>
+            <span class="badge">Eltern-Kontrolle</span>
+          </div>
+          <p class="card-sub-desc">Bestimme, was Kinder selbstständig machen dürfen und wann Eltern zustimmen müssen.</p>
+          <div id="kid-permissions-container" class="permissions-list">
+            <!-- Dynamic Content via app.js -->
+          </div>
+        </div>
+
+        <h3>🤝 Befreundete Familien</h3>
         <div id="friends-family-list" class="grid-list">
           <!-- Dynamic Content via app.js -->
         </div>
@@ -202,8 +226,8 @@
         <span class="nav-label">Kalender</span>
       </button>
       <button class="nav-item" data-tab="tab-friends" onclick="switchTab('tab-friends')">
-        <span class="nav-icon">🤝</span>
-        <span class="nav-label">Familien</span>
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Rechte</span>
       </button>
     </nav>
   </div>
@@ -225,7 +249,7 @@
             <div class="profile-details">
               <strong>Tom (Vater)</strong>
               <span class="role-badge parent">Eltern-Modus</span>
-              <p>Voller Zugriff, Eltern-Freigaben, Fahrgemeinschaften & Kalender.</p>
+              <p>Voller Zugriff, Wunsch-Genehmigung, Rechte & Kosten-Übersicht.</p>
             </div>
             <span class="radio-check">✓</span>
           </div>
@@ -294,6 +318,12 @@
           </div>
         </div>
 
+        <!-- Optional Cost Field -->
+        <div class="form-group">
+          <label>💶 Geschätzte Kosten (Optional)</label>
+          <input type="text" id="adhoc-cost" class="form-input" placeholder="z.B. 5 € Eintritt / Kostenlos">
+        </div>
+
         <div class="form-group">
           <label>Empfänger (Befreundete Familien)</label>
           <div class="checkbox-group">
@@ -328,7 +358,7 @@
 
         <div class="form-group">
           <label>Kategorie / Wunsch</label>
-          <select id="wish-category" class="form-input" onchange="updateWishIcon()">
+          <select id="wish-category" class="form-input">
             <option value="🏊 Schwimmbad">🏊 Schwimmbad / Rutschen</option>
             <option value="🎬 Kino">🎬 Kino / Filmabend</option>
             <option value="⚽ Fußball / Sport">⚽ Fußball / Sport</option>
@@ -341,6 +371,12 @@
         <div class="form-group">
           <label>Zusatz-Info / Beschreibung</label>
           <input type="text" id="wish-desc" class="form-input" placeholder="z.B. Gerne am Wochenende mit Freunden...">
+        </div>
+
+        <!-- Optional Cost for Wish -->
+        <div class="form-group">
+          <label>💶 Geschätzte Kosten (Optional)</label>
+          <input type="text" id="wish-cost" class="form-input" placeholder="z.B. 12 € / Kostenlos">
         </div>
 
         <div class="modal-footer">

@@ -47,21 +47,17 @@
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark mode adaptive hint support */
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-app: #0f172a;
     --bg-card: #1e293b;
     --bg-subtle: #334155;
-    
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    
     --border-color: #334155;
   }
 }
 
-/* Reset & Base */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -313,6 +309,12 @@ body {
   margin-bottom: 16px;
 }
 
+.card-sub-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
 .section-card.highlight-card {
   border-color: rgba(16, 185, 129, 0.4);
   background: linear-gradient(180deg, var(--bg-card) 0%, rgba(16, 185, 129, 0.04) 100%);
@@ -348,6 +350,18 @@ body {
 .badge.green {
   background: var(--secondary-light);
   color: var(--secondary);
+}
+
+.cost-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--accent-light);
+  color: #92400e;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 @keyframes pulse {
@@ -418,6 +432,7 @@ body {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .item-status-pill.accepted {
@@ -427,7 +442,40 @@ body {
 
 .item-status-pill.pending {
   background: var(--accent-light);
-  color: var(--accent);
+  color: #92400e;
+}
+
+.item-status-pill.rejected {
+  background: var(--rose-light);
+  color: var(--rose);
+}
+
+/* Wish Approval Buttons */
+.wish-approval-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-approve {
+  background: var(--secondary);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-decline {
+  background: var(--rose-light);
+  color: var(--rose);
+  border: none;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* Quick Response Buttons */
@@ -478,6 +526,88 @@ body {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+/* Kid Rights / Permissions List */
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.permission-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.perm-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.perm-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.perm-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.perm-toggle-row:last-child {
+  border-bottom: none;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1;
+  transition: .2s;
+  border-radius: 20px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--secondary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
 }
 
 /* Matches Grid Box */

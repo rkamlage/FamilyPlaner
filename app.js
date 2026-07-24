@@ -23,7 +23,12 @@ const state = {
       role: 'Eigenes Handy',
       avatar: '👦',
       isParent: false,
-      hasOwnDevice: true
+      hasOwnDevice: true,
+      permissions: {
+        canSendAdHocDirectly: true,
+        requiresWishApproval: true,
+        maxBudget: '15 €'
+      }
     },
     child_managed: {
       id: 'c2',
@@ -31,7 +36,12 @@ const state = {
       role: 'Verwaltet',
       avatar: '👧',
       isParent: false,
-      hasOwnDevice: false
+      hasOwnDevice: false,
+      permissions: {
+        canSendAdHocDirectly: false,
+        requiresWishApproval: true,
+        maxBudget: '10 €'
+      }
     }
   },
 
@@ -44,6 +54,7 @@ const state = {
       activity: '⚽ Fußball spielen & Bolzen',
       time: 'Heute 15:00 Uhr',
       location: 'Bolzplatz Parkstraße',
+      cost: 'Kostenlos',
       status: 'Aktiv',
       rsvps: [
         { family: 'Familie Weber', name: 'Jonas', status: 'Dabei! 🎉', avatar: '👦' },
@@ -57,6 +68,7 @@ const state = {
       activity: '🍦 Eis essen & Spielplatz',
       time: 'Heute 16:30 Uhr',
       location: 'Eiscafé Venezia',
+      cost: 'ca. 4 € / Kind',
       status: 'Aktiv',
       rsvps: [
         { family: 'Familie Weber', name: 'Emma', status: 'Ab 17 Uhr dabei!', avatar: '👧' }
@@ -64,7 +76,7 @@ const state = {
     }
   ],
 
-  // Kids Wishlist
+  // Kids Wishlist with Parent Approval Status
   wishes: [
     {
       id: 'wish-1',
@@ -72,6 +84,8 @@ const state = {
       avatar: '👦',
       category: '🏊 Schwimmbad / Rutschen',
       desc: 'Wollte unbedingt mal wieder in die Wasserwelt mit Sprungturm!',
+      cost: '12 € Eintritt',
+      status: 'Genehmigt',
       dateAdded: 'Gestern'
     },
     {
@@ -80,6 +94,8 @@ const state = {
       avatar: '👧',
       category: '🎬 Kino / Filmabend',
       desc: 'Neuer Animationsfilm im Kinopolis',
+      cost: '9,50 € Ticket',
+      status: 'Ausstehend',
       dateAdded: 'Vor 2 Tagen'
     },
     {
@@ -88,6 +104,8 @@ const state = {
       avatar: '👦',
       category: '🎲 Brettspiel-Nachmittag',
       desc: 'Siedler von Catan mit Freunden spielen',
+      cost: 'Kostenlos',
+      status: 'Genehmigt',
       dateAdded: 'Heute'
     }
   ],
@@ -99,11 +117,11 @@ const state = {
       wishCategory: '🏊 Schwimmbad',
       ourChild: 'Nick (Familie Müller)',
       friendChild: 'Jonas (Familie Weber)',
-      recommendation: 'Jonas hat gestern auch "Schwimmbad" gewüscht. Wollt ihr Samstag zusammen gehen?'
+      recommendation: 'Jonas hat gestern auch "Schwimmbad" gewünscht. Wollt ihr Samstag zusammen gehen?'
     }
   ],
 
-  // Calendar Events & Carpooling
+  // Calendar Events & Carpooling & Optional Costs
   calendarEvents: [
     {
       id: 'evt-1',
@@ -111,7 +129,8 @@ const state = {
       forMember: 'Nick',
       time: 'Samstag, 10:00 - 12:00 Uhr',
       location: 'Sportpark Ost',
-      carpool: ' Hin: Fam. Müller / 🚗 Rück: Fam. Weber',
+      cost: 'Kostenlos',
+      carpool: '🚗 Hin: Fam. Müller / 🚗 Rück: Fam. Weber',
       status: 'Bestätigt'
     },
     {
@@ -120,6 +139,7 @@ const state = {
       forMember: 'Maya',
       time: 'Sonntag, 14:30 - 18:00 Uhr',
       location: 'Familie Weber Zuhause',
+      cost: 'Geschenk ~15 €',
       carpool: '🚗 Bringt & holt Fam. Müller',
       status: 'Bestätigt'
     },
@@ -129,6 +149,7 @@ const state = {
       forMember: 'Nick & Maya',
       time: 'Nächsten Mittwoch, 15:00 Uhr',
       location: 'Hallenbad Stadtmitte',
+      cost: '12 € / Person',
       carpool: '🚗 Offen (Wer kann fahren?)',
       status: 'Geplant (Wish Match)'
     }
@@ -157,7 +178,6 @@ const state = {
 document.addEventListener('DOMContentLoaded', () => {
   renderApp();
   
-  // Trigger welcome push notification after 1.5s
   setTimeout(() => {
     showToast('✨ Wilkommen bei FamilyPlaner! Jonas (Fam. Weber) möchte auch schwimmen gehen!');
   }, 1500);
@@ -170,6 +190,7 @@ function renderApp() {
   renderAdHocList();
   renderWishesList();
   renderCalendarEvents();
+  renderPermissions();
   renderConnectedFamilies();
 }
 
@@ -188,7 +209,7 @@ function renderHeaderAndProfile() {
   if (state.activeProfile === 'parent') {
     banner.className = 'mode-banner';
     bannerTitle.textContent = '🛡️ Eltern-Supervision aktiv';
-    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Anfragen & verknüpfte Profile.';
+    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Anfragen, Wunsch-Freigaben & Kosten.';
   } else if (state.activeProfile === 'child_independent') {
     banner.className = 'mode-banner child-mode';
     bannerTitle.textContent = '👦 Nicks Kind-Modus (Eigenes Handy)';
@@ -212,6 +233,32 @@ function renderHeaderAndProfile() {
 
 // Render Dashboard View
 function renderDashboard() {
+  // Pending Wish Approvals (Only visible to parents)
+  const approvalWidget = document.getElementById('parent-approval-widget');
+  const pendingWishes = state.wishes.filter(w => w.status === 'Ausstehend');
+  
+  if (state.activeProfile === 'parent' && pendingWishes.length > 0) {
+    approvalWidget.style.display = 'block';
+    document.getElementById('pending-wish-count').textContent = `${pendingWishes.length} Prüfen`;
+    document.getElementById('dashboard-pending-wishes').innerHTML = pendingWishes.map(w => `
+      <div class="list-item">
+        <div class="list-item-left">
+          <span class="item-avatar">${w.avatar}</span>
+          <div>
+            <div class="item-title">${w.category} (für ${w.child})</div>
+            <div class="item-sub">💶 Kosten: ${w.cost} • ${w.desc}</div>
+          </div>
+        </div>
+        <div class="wish-approval-actions">
+          <button class="btn-approve" onclick="approveWish('${w.id}')">Genehmigen ✅</button>
+          <button class="btn-decline" onclick="declineWish('${w.id}')">Ablehnen ❌</button>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    approvalWidget.style.display = 'none';
+  }
+
   // Ad-hoc Summary List
   const adhocContainer = document.getElementById('dashboard-adhoc-list');
   document.getElementById('adhoc-count-badge').textContent = `${state.adHocRequests.length} Aktiv`;
@@ -224,6 +271,7 @@ function renderDashboard() {
         <div>
           <div class="item-title">${req.activity}</div>
           <div class="item-sub">📍 ${req.location} • ⏰ ${req.time}</div>
+          ${req.cost ? `<span class="cost-badge">💶 ${req.cost}</span>` : ''}
         </div>
       </div>
       <div class="rsvp-buttons">
@@ -253,6 +301,7 @@ function renderDashboard() {
         <div>
           <div class="item-title">${evt.title}</div>
           <div class="item-sub">👤 ${evt.forMember} • ⏰ ${evt.time}</div>
+          ${evt.cost ? `<div class="item-sub"><span class="cost-badge">💶 ${evt.cost}</span></div>` : ''}
           <div class="item-sub" style="color: var(--primary); font-weight:600;">🚗 Fahrgemeinschaft: ${evt.carpool}</div>
         </div>
       </div>
@@ -280,12 +329,13 @@ function renderAdHocList() {
       <div style="font-size:12px; margin: 10px 0; display:flex; flex-direction:column; gap:4px; background:var(--bg-subtle); padding:10px; border-radius:var(--radius-md);">
         <div>⏰ <strong>Zeit:</strong> ${req.time}</div>
         <div>📍 <strong>Ort:</strong> ${req.location}</div>
+        ${req.cost ? `<div>💶 <strong>Kosten:</strong> <span class="cost-badge">${req.cost}</span></div>` : ''}
       </div>
 
       <h4 style="font-size:12px; margin-bottom:6px;">Rückmeldungen von befreundeten Familien:</h4>
       <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
         ${req.rsvps.map(r => `
-          <div style="display:flex; justify-space-between; align-items:center; font-size:12px; background:white; padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; background:white; padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
             <span>${r.avatar} <strong>${r.name}</strong> (${r.family})</span>
             <span class="item-status-pill ${r.status.includes('Dabei') ? 'accepted' : 'pending'}">${r.status}</span>
           </div>
@@ -300,9 +350,8 @@ function renderAdHocList() {
   `).join('');
 }
 
-// Render Wishes Section
+// Render Wishes Section with Approval Actions
 function renderWishesList() {
-  // Wish Matches Banner Container
   const matchesContainer = document.getElementById('wish-matches-container');
   matchesContainer.innerHTML = state.wishMatches.map(m => `
     <div class="match-card">
@@ -314,20 +363,55 @@ function renderWishesList() {
     </div>
   `).join('');
 
-  // Wishes List
   const container = document.getElementById('wishes-full-list');
-  container.innerHTML = state.wishes.map(w => `
-    <div class="list-item">
-      <div class="list-item-left">
-        <span class="item-avatar">${w.avatar}</span>
-        <div>
-          <div class="item-title">${w.category} (für ${w.child})</div>
-          <div class="item-sub">${w.desc}</div>
+  container.innerHTML = state.wishes.map(w => {
+    let statusClass = 'accepted';
+    if (w.status === 'Ausstehend') statusClass = 'pending';
+    if (w.status === 'Abgelehnt') statusClass = 'rejected';
+
+    return `
+      <div class="list-item">
+        <div class="list-item-left">
+          <span class="item-avatar">${w.avatar}</span>
+          <div>
+            <div class="item-title">${w.category} (für ${w.child})</div>
+            <div class="item-sub">${w.desc}</div>
+            ${w.cost ? `<div class="item-sub" style="margin-top:2px;"><span class="cost-badge">💶 ${w.cost}</span></div>` : ''}
+          </div>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          <span class="item-status-pill ${statusClass}">${w.status}</span>
+          
+          ${state.activeProfile === 'parent' && w.status === 'Ausstehend' ? `
+            <div class="wish-approval-actions">
+              <button class="btn-approve" onclick="approveWish('${w.id}')">Genehmigen ✅</button>
+              <button class="btn-decline" onclick="declineWish('${w.id}')">Ablehnen ❌</button>
+            </div>
+          ` : ''}
         </div>
       </div>
-      <span style="font-size:11px; color:var(--text-muted);">${w.dateAdded}</span>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+}
+
+// Wish Approval Handlers
+function approveWish(wishId) {
+  const wish = state.wishes.find(w => w.id === wishId);
+  if (wish) {
+    wish.status = 'Genehmigt';
+    renderApp();
+    showToast(`✅ Wunsch "${wish.category}" für ${wish.child} genehmigt!`);
+  }
+}
+
+function declineWish(wishId) {
+  const wish = state.wishes.find(w => w.id === wishId);
+  if (wish) {
+    wish.status = 'Abgelehnt';
+    renderApp();
+    showToast(`❌ Wunsch "${wish.category}" abgelehnt.`);
+  }
 }
 
 // Render Calendar & Filter
@@ -358,12 +442,86 @@ function renderCalendarEvents() {
         <div>👤 <strong>Für:</strong> ${evt.forMember}</div>
         <div>⏰ <strong>Zeit:</strong> ${evt.time}</div>
         <div>📍 <strong>Ort:</strong> ${evt.location}</div>
+        ${evt.cost ? `<div>💶 <strong>Kosten:</strong> <span class="cost-badge">${evt.cost}</span></div>` : ''}
       </div>
       <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
         🚗 Fahrgemeinschaft: ${evt.carpool}
       </div>
     </div>
   `).join('');
+}
+
+// Render Kid Permissions Settings
+function renderPermissions() {
+  const container = document.getElementById('kid-permissions-container');
+  const nick = state.profiles.child_independent;
+  const maya = state.profiles.child_managed;
+
+  container.innerHTML = `
+    <div class="permission-card">
+      <div class="perm-header">
+        <span style="font-size:22px;">👦</span>
+        <div>
+          <strong>Nick (11 Jahre - Eigenes Handy)</strong>
+          <span style="font-size:10px; color:var(--text-muted); display:block;">Eigenständiger Account</span>
+        </div>
+      </div>
+      <div class="perm-options">
+        <div class="perm-toggle-row">
+          <span>⚡ Darf Spontan-Anfragen direkt senden</span>
+          <label class="toggle-switch">
+            <input type="checkbox" ${nick.permissions.canSendAdHocDirectly ? 'checked' : ''} onchange="togglePermission('child_independent', 'canSendAdHocDirectly')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="perm-toggle-row">
+          <span>✨ Wünsche benötigen Eltern-Freigabe</span>
+          <label class="toggle-switch">
+            <input type="checkbox" ${nick.permissions.requiresWishApproval ? 'checked' : ''} onchange="togglePermission('child_independent', 'requiresWishApproval')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="perm-toggle-row">
+          <span>💶 Max. Budget pro Wunsch: <strong>${nick.permissions.maxBudget}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="permission-card">
+      <div class="perm-header">
+        <span style="font-size:22px;">👧</span>
+        <div>
+          <strong>Maya (7 Jahre - Verwaltetes Profil)</strong>
+          <span style="font-size:10px; color:var(--text-muted); display:block;">Profil wird von Eltern gesteuert</span>
+        </div>
+      </div>
+      <div class="perm-options">
+        <div class="perm-toggle-row">
+          <span>⚡ Darf Spontan-Anfragen direkt senden</span>
+          <label class="toggle-switch">
+            <input type="checkbox" ${maya.permissions.canSendAdHocDirectly ? 'checked' : ''} onchange="togglePermission('child_managed', 'canSendAdHocDirectly')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="perm-toggle-row">
+          <span>✨ Wünsche benötigen Eltern-Freigabe</span>
+          <label class="toggle-switch">
+            <input type="checkbox" ${maya.permissions.requiresWishApproval ? 'checked' : ''} onchange="togglePermission('child_managed', 'requiresWishApproval')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="perm-toggle-row">
+          <span>💶 Max. Budget pro Wunsch: <strong>${maya.permissions.maxBudget}</strong></span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function togglePermission(profileKey, permKey) {
+  const p = state.profiles[profileKey].permissions;
+  p[permKey] = !p[permKey];
+  showToast(`⚙️ Rechte für ${state.profiles[profileKey].name} aktualisiert!`);
 }
 
 // Render Connected Families
@@ -431,6 +589,7 @@ function handleCreateAdHoc(event) {
   const activity = document.getElementById('adhoc-activity').value;
   const time = document.getElementById('adhoc-time').value;
   const location = document.getElementById('adhoc-location').value;
+  const cost = document.getElementById('adhoc-cost').value;
 
   const newReq = {
     id: `adhoc-${Date.now()}`,
@@ -439,6 +598,7 @@ function handleCreateAdHoc(event) {
     activity: `⚡ ${activity}`,
     time: time,
     location: location,
+    cost: cost || null,
     status: 'Aktiv',
     rsvps: [
       { family: 'Familie Weber', name: 'Jonas', status: 'Angefragt 📩', avatar: '👦' }
@@ -471,6 +631,7 @@ function handleCreateWish(event) {
   const child = document.getElementById('wish-child-select').value;
   const category = document.getElementById('wish-category').value;
   const desc = document.getElementById('wish-desc').value;
+  const cost = document.getElementById('wish-cost').value;
 
   const newWish = {
     id: `wish-${Date.now()}`,
@@ -478,13 +639,20 @@ function handleCreateWish(event) {
     avatar: child === 'Nick' ? '👦' : '👧',
     category: category,
     desc: desc || 'Keine Zusatzbeschreibung',
+    cost: cost || 'Kostenlos',
+    status: state.activeProfile === 'parent' ? 'Genehmigt' : 'Ausstehend',
     dateAdded: 'Gerade eben'
   };
 
   state.wishes.unshift(newWish);
   closeModal('modal-wish');
   renderApp();
-  showToast(`✨ Wunsch "${category}" für ${child} gespeichert!`);
+
+  if (newWish.status === 'Ausstehend') {
+    showToast(`✨ Wunsch "${category}" eingetragen! Wartet auf Eltern-Freigabe.`);
+  } else {
+    showToast(`✨ Wunsch "${category}" eingetragen und genehmigt!`);
+  }
 }
 
 // Match Event Creation
@@ -497,6 +665,7 @@ function createMatchEvent(matchId) {
       forMember: 'Nick & Jonas',
       time: 'Samstag Nachmittag',
       location: 'Wasserwelt Stadt',
+      cost: '12 € / Person',
       carpool: '🚗 Fam. Müller fährt hin / Fam. Weber holt ab',
       status: 'Bestätigt'
     });
