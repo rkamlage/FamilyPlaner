@@ -327,7 +327,7 @@
             </div>
             
             <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.20</strong></span>
+              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.21</strong></span>
             </div>
           </div>
         </div>
@@ -341,11 +341,17 @@
         <span class="nav-icon">🏠</span>
         <span class="nav-label">Home</span>
       </button>
+      
       <button class="nav-item" data-tab="tab-adhoc" onclick="switchTab('tab-adhoc')">
         <span class="nav-icon">⚡</span>
         <span class="nav-label">Spontan</span>
         <span class="nav-badge" id="nav-adhoc-badge">2</span>
       </button>
+      <button class="nav-item" onclick="openNewAppointmentModal()" style="color: var(--primary); font-weight: bold;">
+        <span class="nav-icon" style="font-size: 24px;">➕</span>
+        <span class="nav-label">Termin</span>
+      </button>
+
       <button class="nav-item" data-tab="tab-wishes" onclick="switchTab('tab-wishes')">
         <span class="nav-icon">✨</span>
         <span class="nav-label">Wünsche</span>
@@ -622,38 +628,64 @@
     </div>
   </div>
 
-  <!-- MODAL: EDIT RECURRING HOBBY -->
-  <div id="modal-edit-hobby" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>🚗 Fahrgemeinschaft bearbeiten</h3>
-        <button class="close-btn" onclick="closeModal('modal-edit-hobby')">✕</button>
+  
+    <!-- MODAL: EDIT RECURRING HOBBY -->
+    <div id="modal-edit-hobby" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>🏆 Hobby bearbeiten</h3>
+          <button class="close-btn" onclick="closeModal('modal-edit-hobby')">✕</button>
+        </div>
+        <form id="form-edit-hobby" onsubmit="handleUpdateHobby(event)" class="modal-body">
+          <input type="hidden" id="edit-hobby-id">
+          
+          <div class="form-group">
+            <label>Hobby / Aktivität</label>
+            <input type="text" id="edit-hobby-title" class="form-input" required>
+          </div>
+
+          <div class="form-group">
+            <label>Für wen?</label>
+            <select id="edit-hobby-child" class="form-input"></select>
+          </div>
+
+          <div class="form-group">
+            <label>Wochentag & Zeit</label>
+            <input type="text" id="edit-hobby-schedule" class="form-input" required>
+          </div>
+
+          <div class="form-group">
+            <label>Ort</label>
+            <input type="text" id="edit-hobby-location" class="form-input" required>
+          </div>
+
+          <div class="form-group">
+            <label>🚗 Hin-Fahrt (Bringdienst)</label>
+            <select id="edit-hobby-bring" class="form-input"></select>
+          </div>
+
+          <div class="form-group">
+            <label>🚗 Rück-Fahrt (Holdienst)</label>
+            <select id="edit-hobby-get" class="form-input"></select>
+          </div>
+
+          <div class="form-group">
+            <label>Begleitung vor Ort</label>
+            <select id="edit-hobby-parent-present" class="form-input">
+              <option value="Ohne Eltern (Trainer / Lehrer schaut)">👀 Ohne Eltern (Trainer / Lehrer dabei)</option>
+              <option value="Mit Eltern-Begleitung">👨‍👩‍👧‍👦 Mit Eltern-Begleitung (Zuschauen)</option>
+            </select>
+          </div>
+
+          <div class="modal-footer" style="flex-wrap: wrap;">
+            <button type="button" class="btn btn-ghost" style="color:var(--danger); flex-basis:100%; border:1px solid var(--danger); margin-bottom:10px;" onclick="deleteHobby()">🗑️ Hobby löschen</button>
+            <button type="button" class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-edit-hobby')">Abbrechen</button>
+            <button type="submit" class="btn btn-primary" style="flex:1;">Speichern</button>
+          </div>
+        </form>
       </div>
-      <form id="form-edit-hobby" onsubmit="handleUpdateHobby(event)" class="modal-body">
-        <input type="hidden" id="edit-hobby-id">
-        <p class="modal-desc">Trage dich für den Bring- oder Holdienst ein.</p>
-        
-        <div class="form-group">
-          <label>🚗 Hin-Fahrt (Bringdienst)</label>
-          <select id="edit-hobby-bring" class="form-input">
-            <!-- Populated dynamically -->
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>🚗 Rück-Fahrt (Holdienst)</label>
-          <select id="edit-hobby-get" class="form-input">
-            <!-- Populated dynamically -->
-          </select>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-edit-hobby')">Abbrechen</button>
-          <button type="submit" class="btn btn-primary">Fahrten aktualisieren</button>
-        </div>
-      </form>
     </div>
-  </div>
+
 
   <!-- AUTHENTICATION OVERLAY -->
   <div id="auth-overlay" class="modal-overlay" style="z-index: 999; background: var(--bg-app); display: flex;">
@@ -748,7 +780,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=20"></script>
+  <script src="app.js?v=21"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -760,7 +792,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.20");
+    versionDisplays.forEach(el => el.textContent = "v0.0.21");
   </script>
 
     <!-- New Appointment Modal -->

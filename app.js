@@ -1039,9 +1039,20 @@ function openEditHobbyModal(id) {
   
   document.getElementById('edit-hobby-id').value = hobby.id;
   
-  // Set existing values if possible
+  document.getElementById('edit-hobby-title').value = hobby.title;
+  document.getElementById('edit-hobby-schedule').value = hobby.schedule;
+  document.getElementById('edit-hobby-location').value = hobby.location;
+  document.getElementById('edit-hobby-parent-present').value = hobby.parentPresent;
+  
+  // Set existing drivers
   document.getElementById('edit-hobby-bring').value = hobby.bringDriver;
   document.getElementById('edit-hobby-get').value = hobby.getDriver;
+
+  // Set child options
+  const kids = state.members.filter(m => !m.isParent);
+  const optionsHtml = kids.length > 0 ? kids.map(m => `<option value="${m.name.split(' ')[0]}">${m.avatar} ${m.name}</option>`).join('') : `<option value="Nick">👦 Nick</option>`;
+  document.getElementById('edit-hobby-child').innerHTML = optionsHtml;
+  document.getElementById('edit-hobby-child').value = hobby.child;
 
   document.getElementById('modal-edit-hobby').classList.add('active');
 }
@@ -1051,16 +1062,26 @@ async function handleUpdateHobby(event) {
   const id = document.getElementById('edit-hobby-id').value;
   const bring = document.getElementById('edit-hobby-bring').value;
   const get = document.getElementById('edit-hobby-get').value;
+  
+  const title = document.getElementById('edit-hobby-title').value;
+  const child = document.getElementById('edit-hobby-child').value;
+  const schedule = document.getElementById('edit-hobby-schedule').value;
+  const location = document.getElementById('edit-hobby-location').value;
+  const parentPresent = document.getElementById('edit-hobby-parent-present').value;
+
   const newStatus = (bring.includes('Offen') || get.includes('Offen')) ? 'Fahrt offen ⚠️' : 'Fahrten geregelt ✅';
 
   if (currentFamilyId) {
     await db.from('recurring_hobbies')
-      .update({ bring_driver: bring, get_driver: get, status: newStatus })
+      .update({ 
+        title, child, schedule, location, parent_present: parentPresent,
+        bring_driver: bring, get_driver: get, status: newStatus 
+      })
       .eq('id', id);
   }
 
   closeModal('modal-edit-hobby');
-  showToast('Fahrgemeinschaft wurde aktualisiert!');
+  showToast('Hobby wurde aktualisiert!');
   fetchCloudData();
 }
 
@@ -1299,7 +1320,7 @@ async function handleAuthSubmit(event) {
 
       if (familyMode === 'create') {
         const familyName = document.getElementById('auth-family-name').value || 'Meine Familie';
-        const inviteCode = familyName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+        const inviteCode = familyName.toUpperCase() + '-' + Math.floor(10000 + Math.random() * 90000);
         console.log('Creating family:', familyName, 'with code:', inviteCode);
         
         const { data: familyData, error: famError } = await db.from('families').insert([{ name: familyName, invite_code: inviteCode }]).select().single();
@@ -1523,5 +1544,15 @@ window.deleteAppointment = async function(id) {
     await db.from('appointments').delete().eq('id', id);
     fetchCloudData();
     showToast("Termin gelöscht.");
+  }
+};
+
+window.deleteHobby = async function() {
+  const id = document.getElementById('edit-hobby-id').value;
+  if (confirm("Möchtest du dieses Hobby wirklich löschen?")) {
+    await db.from('recurring_hobbies').delete().eq('id', id);
+    closeModal('modal-edit-hobby');
+    showToast("Hobby gelöscht.");
+    fetchCloudData();
   }
 };
