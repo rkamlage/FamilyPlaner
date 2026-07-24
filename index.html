@@ -266,10 +266,10 @@
 
       
       <!-- TAB: APPOINTMENTS -->
-      <section id="tab-appointments" class="tab-content" style="display:none;">
-        <div class="header">
-          <div class="header-content">
-            <h1>📅 Termine</h1>
+      <section id="tab-appointments" class="tab-content">
+        <div class="section-title-bar">
+          <div>
+            <h2>📅 Termine</h2>
             <p>Familienkalender & Planung</p>
           </div>
           <button class="btn btn-primary" onclick="openNewAppointmentModal()">+ Neuer Termin</button>
@@ -356,7 +356,7 @@
             </div>
             
             <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.26</strong></span>
+              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.27</strong></span>
             </div>
           </div>
         </div>
@@ -376,7 +376,7 @@
         <span class="nav-label">Spontan</span>
         <span class="nav-badge" id="nav-adhoc-badge">2</span>
       </button>
-      <button class="nav-item" data-tab="tab-appointments" onclick="switchTab('tab-appointments')" style="color: var(--primary); font-weight: bold;">
+      <button class="nav-item" data-tab="tab-appointments" onclick="switchTab('tab-appointments')">
         <span class="nav-icon" style="font-size: 24px;">📅</span>
         <span class="nav-label">Termine</span>
       </button>
@@ -385,7 +385,7 @@
         <span class="nav-icon">✨</span>
         <span class="nav-label">Wünsche</span>
       </button>
-      <button class="nav-item" data-tab="tab-calendar" onclick="switchTab('tab-appointments')">
+      <button class="nav-item" data-tab="tab-calendar" onclick="switchTab('tab-calendar')">
         <span class="nav-icon">🏆</span>
         <span class="nav-label">Hobbys</span>
       </button>
@@ -809,7 +809,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=26"></script>
+  <script src="app.js?v=27"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -821,7 +821,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.26");
+    versionDisplays.forEach(el => el.textContent = "v0.0.27");
   </script>
 
     <!-- New Appointment Modal -->
@@ -829,7 +829,7 @@
         <div class="modal-card">
         <div class="modal-header">
           <h3>📅 Neuer Termin</h3>
-          <button class="btn-close" onclick="closeModal('modal-appointment')">✕</button>
+          <button class="close-btn" onclick="closeModal('modal-appointment')">✕</button>
         </div>
         <form id="form-appointment" onsubmit="handleCreateAppointment(event)" class="modal-body">
           <div class="form-group">
