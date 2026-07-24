@@ -377,13 +377,6 @@ setTimeout(() => setAppTheme(savedTheme), 100);
 const tabs = document.querySelectorAll('.tab-content');
 const navButtons = document.querySelectorAll('.nav-bar button');
 
-// --- DOM Initialization & Render ---
-initSupabase();
-renderApp();
-
-setTimeout(() => {
-  showToast('✨ Wilkommen bei FamilyPlaner! Jonas (Fam. Weber) möchte auch schwimmen gehen!');
-}, 1500);
 
 // Main Render Dispatcher
 function renderApp() {
@@ -1342,3 +1335,13 @@ async function logout() {
   await db.auth.signOut();
   window.location.reload();
 }
+
+// --- DOM Initialization & Render ---
+// Call these at the VERY END of the file to guarantee all 'let' and 'const' variables
+// are out of the Temporal Dead Zone.
+initSupabase();
+renderApp();
+
+setTimeout(() => {
+  showToast('✨ Wilkommen bei FamilyPlaner! Jonas (Fam. Weber) möchte auch schwimmen gehen!');
+}, 1500);
