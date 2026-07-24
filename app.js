@@ -506,7 +506,7 @@ function renderDashboard() {
         <button class="btn-rsvp yes" onclick="respondAdHoc('${req.id}', 'Dabei!')">Dabei! 👍</button>
       </div>
     </div>
-  `).join('');
+  `;}).join('');
 
   // Today's Events
   const todayContainer = document.getElementById('dashboard-today-list');
