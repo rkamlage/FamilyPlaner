@@ -458,6 +458,14 @@ function renderHeaderAndProfile() {
 
 // Populate Dynamic Dropdowns for Creating Wishes, Hobbies & AdHocs
 function populateDropdowns() {
+  const homeFilter = document.getElementById('home-person-filter');
+  if (homeFilter && state.members.length > 0) {
+    const currentVal = homeFilter.value;
+    homeFilter.innerHTML = `<option value="all">👨‍👩‍👧‍👦 Ganze Familie</option>` + 
+      state.members.map(m => `<option value="${m.name}">${m.avatar} ${m.name}</option>`).join('');
+    if (currentVal) homeFilter.value = currentVal;
+  }
+
   const adhocCreator = document.getElementById('adhoc-creator-select');
   const wishChild = document.getElementById('wish-child-select');
   const hobbyChild = document.getElementById('hobby-child-select');
@@ -596,7 +604,7 @@ function renderDashboard() {
   
   // Pending Wish Approvals (Only visible to parents)
   const approvalWidget = document.getElementById('parent-approval-widget');
-  const pendingWishes = state.wishes.filter(w => w.status === 'Ausstehend');
+  const pendingWishes = state.wishes.filter(w => w.status === 'Ausstehend' && (personFilter === 'all' || w.child === personFilter));
   
   if (curMember.isParent && pendingWishes.length > 0 && filterStr === 'today') {
     approvalWidget.style.display = 'block';
@@ -624,6 +632,9 @@ function renderDashboard() {
   const apptContainer = document.getElementById('dashboard-appointments-list');
   if (apptContainer) {
     let filteredAppts = state.appointments;
+    if (personFilter !== 'all') {
+      filteredAppts = filteredAppts.filter(a => a.child === personFilter || a.bring_driver === personFilter || a.get_driver === personFilter || a.caretaker === personFilter);
+    }
     // VERY simple filter logic based on date string comparison if possible, or just show all for now if filter is complex
     
     apptContainer.innerHTML = filteredAppts.map(a => {
@@ -658,7 +669,11 @@ function renderDashboard() {
 
   // Dashboard Carpool Driver Logistics Widget (Internal & External)
   const carpoolContainer = document.getElementById('dashboard-carpool-list');
-  carpoolContainer.innerHTML = state.recurringHobbies.map(h => {
+  let filteredHobbies = state.recurringHobbies;
+  if (personFilter !== 'all') {
+    filteredHobbies = filteredHobbies.filter(h => h.child === personFilter || h.bringDriver === personFilter || h.getDriver === personFilter);
+  }
+  carpoolContainer.innerHTML = filteredHobbies.map(h => {
     const isParent = curMember.isParent;
     const bringBtn = (isParent && h.bringDriver && h.bringDriver.includes('Offen')) ? `<button class="btn btn-ghost" style="padding: 2px 6px; font-size: 11px; margin-top: 4px; display:block;" onclick="assignDriver('${h.id}', 'bring')">Ich fahre Hin</button>` : '';
     const getBtn = (isParent && h.getDriver && h.getDriver.includes('Offen')) ? `<button class="btn btn-ghost" style="padding: 2px 6px; font-size: 11px; margin-top: 4px; display:block;" onclick="assignDriver('${h.id}', 'get')">Ich fahre Rück</button>` : '';
@@ -686,7 +701,12 @@ function renderDashboard() {
   document.getElementById('adhoc-count-badge').textContent = `${state.adHocRequests.length} Aktiv`;
   document.getElementById('nav-adhoc-badge').textContent = state.adHocRequests.length;
 
-  adhocContainer.innerHTML = state.adHocRequests.map(req => generateAdhocCard(req, curMember)).join('');
+  let filteredAdhoc = state.adHocRequests;
+  if (personFilter !== 'all') {
+    filteredAdhoc = filteredAdhoc.filter(req => req.creator === personFilter);
+  }
+  document.getElementById('adhoc-count-badge').textContent = `${filteredAdhoc.length} Aktiv`;
+  adhocContainer.innerHTML = filteredAdhoc.map(req => generateAdhocCard(req, curMember)).join('');
 }
 
 
@@ -1599,7 +1619,7 @@ function renderAppointmentsTab() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
 
   container.innerHTML = state.appointments.map(appt => {
-    const isMine = appt.child === curMember.name || appt.bringDriver === curMember.name || appt.getDriver === curMember.name || appt.caretaker === curMember.name;
+    const isMine = appt.child === curMember.name || appt.bring_driver === curMember.name || appt.get_driver === curMember.name || appt.caretaker === curMember.name;
     const highlightClass = isMine ? 'highlight-item' : '';
 
     return `
@@ -1610,7 +1630,7 @@ function renderAppointmentsTab() {
             <div class="item-title">${appt.title} <span style="font-size:10px; color:var(--text-muted);">für ${appt.child}</span></div>
             <div class="item-sub">⏱️ ${appt.date} um ${appt.time} Uhr</div>
             <div class="item-sub" style="margin-top:4px;">
-              🚗 Bringt: ${appt.bringDriver || '?'} | Holt: ${appt.getDriver || '?'} <br>
+              🚗 Bringt: ${appt.bring_driver || '?'} | Holt: ${appt.get_driver || '?'} <br>
               👀 Betreuung: ${appt.caretaker || 'Niemand'}
             </div>
             ${appt.description ? `<div class="item-sub" style="margin-top:4px; font-style:italic;">📝 ${appt.description}</div>` : ''}
