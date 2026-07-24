@@ -200,13 +200,13 @@ const defaultState = {
 };
 
 // --- Supabase Cloud & Live Sync Engine ---
-const supabase = window.supabaseClient;
+const db = window.supabaseClient;
 let currentFamilyId = null;
 
 const state = Object.assign({}, defaultState);
 
 async function initSupabase() {
-  if (!supabase) return;
+  if (!db) return;
   
   // Check for Child PIN Session first
   const childSession = safeStorageGet('familyplaner_child_session');
@@ -225,7 +225,7 @@ async function initSupabase() {
   }
 
   // Check for active parent session
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await db.auth.getSession();
   
   if (!session) {
     // Show Auth Overlay
@@ -237,7 +237,7 @@ async function initSupabase() {
   document.getElementById('auth-overlay').style.display = 'none';
 
   // 1. Get current user profile and family
-  const { data: userProfile } = await supabase.from('users').select('*').eq('auth_id', session.user.id).single();
+  const { data: userProfile } = await db.from('users').select('*').eq('auth_id', session.user.id).single();
   
   if (userProfile) {
     currentFamilyId = userProfile.family_id;
@@ -251,9 +251,9 @@ async function initSupabase() {
   } else {
     // Fallback if no user profile is found but auth exists
     console.warn("User profile not linked. Proceeding with default logic.");
-    let { data: families } = await supabase.from('families').select('*').eq('invite_code', 'MUELLER-2026-FP').limit(1);
+    let { data: families } = await db.from('families').select('*').eq('invite_code', 'MUELLER-2026-FP').limit(1);
     if (!families || families.length === 0) {
-      const { data: newFam } = await supabase.from('families').insert([{ name: 'Familie Müller', invite_code: 'MUELLER-2026-FP' }]).select();
+      const { data: newFam } = await db.from('families').insert([{ name: 'Familie Müller', invite_code: 'MUELLER-2026-FP' }]).select();
       if (newFam) currentFamilyId = newFam[0].id;
     } else {
       currentFamilyId = families[0].id;
@@ -272,9 +272,9 @@ async function initSupabase() {
 
 async function fetchCloudData() {
   const [adhocRes, wishesRes, hobbiesRes] = await Promise.all([
-    supabase.from('ad_hoc_requests').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
-    supabase.from('wishes').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
-    supabase.from('recurring_hobbies').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false })
+    db.from('ad_hoc_requests').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
+    db.from('wishes').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false }),
+    db.from('recurring_hobbies').select('*').eq('family_id', currentFamilyId).order('created_at', { ascending: false })
   ]);
   
   if (adhocRes.data && adhocRes.data.length > 0) state.adHocRequests = adhocRes.data.map(mapAdHocFromDB);
@@ -285,7 +285,7 @@ async function fetchCloudData() {
 }
 
 function setupRealtimeSubscriptions() {
-  supabase.channel('public:family_planer')
+  db.channel('public:family_planer')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'ad_hoc_requests' }, payload => {
       fetchCloudData();
       showToast('⚡ Live-Sync: Neue Spontan-Anfrage empfangen!');
@@ -974,7 +974,7 @@ async function handleUpdateHobby(event) {
   const newStatus = (bring.includes('Offen') || get.includes('Offen')) ? 'Fahrt offen ⚠️' : 'Fahrten geregelt ✅';
 
   if (currentFamilyId) {
-    await supabase.from('recurring_hobbies')
+    await db.from('recurring_hobbies')
       .update({ bring_driver: bring, get_driver: get, status: newStatus })
       .eq('id', id);
   }
@@ -995,7 +995,7 @@ async function handleCreateHobby(event) {
   const parentPresent = document.getElementById('hobby-parent-present').value;
 
   if (currentFamilyId) {
-    await supabase.from('recurring_hobbies').insert([{
+    await db.from('recurring_hobbies').insert([{
       family_id: currentFamilyId,
       child_name: child,
       title: title,
@@ -1025,7 +1025,7 @@ async function handleCreateAdHoc(event) {
   const parentPresent = document.getElementById('adhoc-parent-present').value;
 
   if (currentFamilyId) {
-    await supabase.from('ad_hoc_requests').insert([{
+    await db.from('ad_hoc_requests').insert([{
       family_id: currentFamilyId,
       creator_name: creator,
       activity: `⚡ ${activity}`,
@@ -1071,7 +1071,7 @@ async function handleCreateWish(event) {
   const status = curMember.isParent ? 'approved' : 'pending';
 
   if (currentFamilyId) {
-    await supabase.from('wishes').insert([{
+    await db.from('wishes').insert([{
       family_id: currentFamilyId,
       child_name: child,
       category: category,
@@ -1207,7 +1207,7 @@ async function handleAuthSubmit(event) {
       const name = document.getElementById('auth-name').value || 'Elternteil';
       
       // 1. Sign up in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+      const { data: authData, error: authError } = await db.auth.signUp({ email, password });
       if (authError) throw authError;
       console.log('Auth User Created!', authData.user?.id);
 
@@ -1219,7 +1219,7 @@ async function handleAuthSubmit(event) {
         const inviteCode = familyName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
         console.log('Creating family:', familyName, 'with code:', inviteCode);
         
-        const { data: familyData, error: famError } = await supabase.from('families').insert([{ name: familyName, invite_code: inviteCode }]).select().single();
+        const { data: familyData, error: famError } = await db.from('families').insert([{ name: familyName, invite_code: inviteCode }]).select().single();
         if (famError) throw famError;
         
         famId = familyData.id;
@@ -1228,7 +1228,7 @@ async function handleAuthSubmit(event) {
       } else {
         const inviteCode = document.getElementById('auth-invite-code').value.trim();
         console.log('Joining family with code:', inviteCode);
-        const { data: existingFam, error: findFamError } = await supabase.from('families').select('*').eq('invite_code', inviteCode).single();
+        const { data: existingFam, error: findFamError } = await db.from('families').select('*').eq('invite_code', inviteCode).single();
         
         if (findFamError || !existingFam) {
           throw new Error('Familie mit diesem Einladungs-Code nicht gefunden!');
@@ -1241,7 +1241,7 @@ async function handleAuthSubmit(event) {
 
       // 3. Create User Profile linked to auth_id
       console.log('Creating user profile...');
-      const { error: profileError } = await supabase.from('users').insert([{
+      const { error: profileError } = await db.from('users').insert([{
         auth_id: authData.user.id,
         family_id: famId,
         email: email,
@@ -1256,14 +1256,14 @@ async function handleAuthSubmit(event) {
       // But we added a DB trigger to auto-confirm, so we can just log in immediately!
       if (!authData.session) {
         console.log('Signing in newly created user...');
-        await supabase.auth.signInWithPassword({ email, password });
+        await db.auth.signInWithPassword({ email, password });
       }
 
       showToast('Registrierung erfolgreich!');
     } else {
       // Login Mode
       console.log('Starting Login Flow...');
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
       showToast('Erfolgreich eingeloggt!');
     }
@@ -1295,7 +1295,7 @@ async function handleChildLogin(event) {
   }
   
   try {
-    const { data: family, error } = await supabase.from('families').select('id, name').eq('invite_code', inviteCode).single();
+    const { data: family, error } = await db.from('families').select('id, name').eq('invite_code', inviteCode).single();
     if (error || !family) {
       alert('Familie nicht gefunden. Einladungs-Code überprüfen!');
       return;
@@ -1339,6 +1339,6 @@ function loadState() {
 
 async function logout() {
   safeStorageRemove('familyplaner_child_session');
-  await supabase.auth.signOut();
+  await db.auth.signOut();
   window.location.reload();
 }
