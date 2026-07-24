@@ -3,51 +3,21 @@
    ========================================================================== */
 
 // --- Application State ---
-const state = {
-  // Profiles in current household
+const defaultState = {
   activeProfile: 'parent', // 'parent' | 'child_independent' | 'child_managed'
   currentFamily: 'Familie Müller',
   googleCalendarSynced: true,
   lastGoogleSync: 'Vor 5 Minuten',
-  
-  profiles: {
-    parent: {
-      id: 'p1',
-      name: 'Tom (Vater)',
-      role: 'Eltern-Modus',
-      avatar: '👨',
-      isParent: true,
-      canApprove: true
-    },
-    child_independent: {
-      id: 'c1',
-      name: 'Nick (11 J.)',
-      role: 'Eigenes Handy',
-      avatar: '👦',
-      isParent: false,
-      hasOwnDevice: true,
-      permissions: {
-        canSendAdHocDirectly: true,
-        requiresWishApproval: true,
-        maxBudget: '15 €'
-      }
-    },
-    child_managed: {
-      id: 'c2',
-      name: 'Maya (7 J.)',
-      role: 'Verwaltet',
-      avatar: '👧',
-      isParent: false,
-      hasOwnDevice: false,
-      permissions: {
-        canSendAdHocDirectly: false,
-        requiresWishApproval: true,
-        maxBudget: '10 €'
-      }
-    }
-  },
 
-  // Ad-Hoc Requests ("Wer hat JETZT Lust?")
+  // Family Members Management (Addable/Editable)
+  members: [
+    { id: 'parent', name: 'Tom (Vater)', role: 'parent', avatar: '👨', age: 41, isParent: true },
+    { id: 'mother', name: 'Sarah (Mutter)', role: 'parent', avatar: '👩', age: 39, isParent: true },
+    { id: 'child_independent', name: 'Nick (Sohn)', role: 'child_independent', avatar: '👦', age: 11, isParent: false, hasOwnDevice: true, permissions: { canSendAdHocDirectly: true, requiresWishApproval: true, maxBudget: '15 €' } },
+    { id: 'child_managed', name: 'Maya (Tochter)', role: 'child_managed', avatar: '👧', age: 7, isParent: false, hasOwnDevice: false, permissions: { canSendAdHocDirectly: false, requiresWishApproval: true, maxBudget: '10 €' } }
+  ],
+
+  // Ad-Hoc Requests ("Wer hat JETZT Lust?") with Targeted Audience
   adHocRequests: [
     {
       id: 'adhoc-1',
@@ -56,6 +26,7 @@ const state = {
       activity: '⚽ Fußball spielen & Bolzen',
       time: 'Heute 15:00 Uhr',
       location: 'Bolzplatz Parkstraße',
+      targetAudience: 'Nur Jungs (Nick, Jonas, Ben)',
       cost: 'Kostenlos',
       parentPresent: 'Ohne Eltern (Kinder unter sich)',
       status: 'Aktiv',
@@ -71,6 +42,7 @@ const state = {
       activity: '🍦 Eis essen & Spielplatz',
       time: 'Heute 16:30 Uhr',
       location: 'Eiscafé Venezia',
+      targetAudience: 'Nur Mädchen (Maya, Emma)',
       cost: 'ca. 4 € / Kind',
       parentPresent: 'Mit Eltern-Begleitung',
       status: 'Aktiv',
@@ -224,6 +196,39 @@ const state = {
   ]
 };
 
+// --- LocalStorage & Live Sync Engine ---
+function loadState() {
+  const saved = localStorage.getItem('familyplaner_state');
+  if (saved) {
+    try { return JSON.parse(saved); } catch (e) { console.error(e); }
+  }
+  return defaultState;
+}
+
+function saveState() {
+  localStorage.setItem('familyplaner_state', JSON.stringify(state));
+  // Broadcast update to other tabs/windows for instant sync simulation
+  if (window.BroadcastChannel) {
+    const bc = new BroadcastChannel('familyplaner_live_sync');
+    bc.postMessage({ type: 'STATE_UPDATED', timestamp: Date.now() });
+  }
+}
+
+const state = loadState();
+
+// Listen for Live Sync Messages
+if (window.BroadcastChannel) {
+  const bc = new BroadcastChannel('familyplaner_live_sync');
+  bc.onmessage = (event) => {
+    if (event.data && event.data.type === 'STATE_UPDATED') {
+      const refreshed = loadState();
+      Object.assign(state, refreshed);
+      renderApp();
+      showToast('⚡ Live-Sync: Daten vom anderen Gerät empfangen!');
+    }
+  };
+}
+
 // --- DOM Initialization & Render ---
 document.addEventListener('DOMContentLoaded', () => {
   renderApp();
@@ -241,54 +246,136 @@ function renderApp() {
   renderWishesList();
   renderRecurringHobbies();
   renderCalendarEvents();
+  renderOwnFamilyMembers();
   renderPermissions();
   renderConnectedFamilies();
+  populateDropdowns();
 }
 
 // Render Header & Profile Badge
 function renderHeaderAndProfile() {
-  const cur = state.profiles[state.activeProfile];
-  document.getElementById('active-avatar').textContent = cur.avatar;
-  document.getElementById('active-profile-name').textContent = cur.name;
-  document.getElementById('active-profile-role').textContent = cur.role;
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  document.getElementById('active-avatar').textContent = curMember.avatar;
+  document.getElementById('active-profile-name').textContent = curMember.name;
+  document.getElementById('active-profile-role').textContent = curMember.isParent ? 'Eltern-Modus' : (curMember.hasOwnDevice ? 'Eigener Account' : 'Verwaltet');
 
   // Banner text
   const banner = document.getElementById('mode-banner');
   const bannerTitle = document.getElementById('mode-banner-title');
   const bannerSub = document.getElementById('mode-banner-sub');
 
-  if (state.activeProfile === 'parent') {
+  if (curMember.isParent) {
     banner.className = 'mode-banner';
     bannerTitle.textContent = '🛡️ Eltern-Supervision aktiv';
-    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Wunsch-Freigaben, Spontan-Veto & Hol-/Bringdienste.';
-  } else if (state.activeProfile === 'child_independent') {
-    banner.className = 'mode-banner child-mode';
-    bannerTitle.textContent = '👦 Nicks Kind-Modus (Eigenes Handy)';
-    bannerSub.textContent = 'Erstelle Spontan-Anfragen & trage deine Wünsche ein!';
+    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Wunsch-Freigaben, Spontan-Veto & Live-Sync.';
   } else {
     banner.className = 'mode-banner child-mode';
-    bannerTitle.textContent = '👧 Mayas Profil (Verwaltet von Eltern)';
-    bannerSub.textContent = 'Eltern verwalten Anfragen und Wünsche für Maya.';
+    bannerTitle.textContent = `${curMember.avatar} Kind-Modus (${curMember.name})`;
+    bannerSub.textContent = 'Erstelle Spontan-Anfragen & trage deine Wünsche ein!';
   }
 
-  // Update active modal option
-  document.querySelectorAll('.profile-option-card').forEach((card, idx) => {
-    const keys = ['parent', 'child_independent', 'child_managed'];
-    if (keys[idx] === state.activeProfile) {
-      card.classList.add('active');
-    } else {
-      card.classList.remove('active');
-    }
-  });
+  // Profile Modal Options List
+  const profileList = document.getElementById('profile-modal-list');
+  profileList.innerHTML = state.members.map(m => `
+    <div class="profile-option-card ${m.id === state.activeProfile ? 'active' : ''}" onclick="setActiveProfile('${m.id}')">
+      <div class="profile-avatar large">${m.avatar}</div>
+      <div class="profile-details">
+        <strong>${m.name}</strong>
+        <span class="role-badge ${m.isParent ? 'parent' : (m.hasOwnDevice ? 'child' : 'managed')}">
+          ${m.isParent ? 'Eltern-Modus' : (m.hasOwnDevice ? 'Eigenes Handy' : 'Verwaltet')}
+        </span>
+        <p>${m.isParent ? 'Eltern-Freigabe, Live-Sync & Hol-/Bringdienste.' : 'Kindgerechte Sicht: Spontan-Anfragen & Wünsche.'}</p>
+      </div>
+      <span class="radio-check">✓</span>
+    </div>
+  `).join('');
+}
+
+// Populate Dynamic Dropdowns for Creating Wishes, Hobbies & AdHocs
+function populateDropdowns() {
+  const adhocCreator = document.getElementById('adhoc-creator-select');
+  const wishChild = document.getElementById('wish-child-select');
+  const hobbyChild = document.getElementById('hobby-child-select');
+
+  if (adhocCreator) {
+    adhocCreator.innerHTML = state.members.map(m => `<option value="${m.name}">${m.avatar} ${m.name}</option>`).join('') + `<option value="${state.currentFamily}">👨‍👩‍👧‍👦 Gesamte Familie</option>`;
+  }
+
+  const kids = state.members.filter(m => !m.isParent);
+  const optionsHtml = kids.length > 0 ? kids.map(m => `<option value="${m.name.split(' ')[0]}">${m.avatar} ${m.name}</option>`).join('') : `<option value="Nick">👦 Nick</option>`;
+  
+  if (wishChild) wishChild.innerHTML = optionsHtml;
+  if (hobbyChild) hobbyChild.innerHTML = optionsHtml;
+}
+
+// Render Own Family Members List (Tab 5)
+function renderOwnFamilyMembers() {
+  const container = document.getElementById('own-family-members-list');
+  container.innerHTML = state.members.map(m => `
+    <div class="list-item">
+      <div class="list-item-left">
+        <span class="item-avatar">${m.avatar}</span>
+        <div>
+          <div class="item-title">${m.name} (${m.age ? m.age + ' J.' : 'Mitglied'})</div>
+          <div class="item-sub">${m.isParent ? '👨‍👩‍👦 Elternteil (Admin)' : (m.hasOwnDevice ? '📱 Eigenes Smartphone' : '👧 Verwaltetes Kinder-Profil')}</div>
+        </div>
+      </div>
+      ${state.activeProfile === 'parent' && state.members.length > 1 ? `
+        <button class="btn btn-ghost btn-sm" onclick="removeFamilyMember('${m.id}')">Entfernen</button>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// Add New Family Member
+function handleAddMember(event) {
+  event.preventDefault();
+  const name = document.getElementById('member-name').value;
+  const role = document.getElementById('member-role').value;
+  const avatar = document.getElementById('member-avatar').value;
+  const age = document.getElementById('member-age').value;
+
+  const isParent = role === 'parent';
+  const hasOwnDevice = role === 'child_independent';
+
+  const newMember = {
+    id: `mem-${Date.now()}`,
+    name: name,
+    role: role,
+    avatar: avatar,
+    age: age ? parseInt(age) : null,
+    isParent: isParent,
+    hasOwnDevice: hasOwnDevice,
+    permissions: !isParent ? { canSendAdHocDirectly: true, requiresWishApproval: true, maxBudget: '15 €' } : null
+  };
+
+  state.members.push(newMember);
+  saveState();
+  closeModal('modal-add-member');
+  renderApp();
+  showToast(`👨‍👩‍👧‍👦 Neues Familienmitglied "${name}" hinzugefügt!`);
+}
+
+function removeFamilyMember(memberId) {
+  state.members = state.members.filter(m => m.id !== memberId);
+  saveState();
+  renderApp();
+  showToast('Mitglied entfernt.');
+}
+
+function openAddMemberModal() {
+  document.getElementById('modal-add-member').classList.add('active');
 }
 
 // Render Dashboard View
 function renderDashboard() {
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+
   // Pending Wish Approvals (Only visible to parents)
   const approvalWidget = document.getElementById('parent-approval-widget');
   const pendingWishes = state.wishes.filter(w => w.status === 'Ausstehend');
   
-  if (state.activeProfile === 'parent' && pendingWishes.length > 0) {
+  if (curMember.isParent && pendingWishes.length > 0) {
     approvalWidget.style.display = 'block';
     document.getElementById('pending-wish-count').textContent = `${pendingWishes.length} Prüfen`;
     document.getElementById('dashboard-pending-wishes').innerHTML = pendingWishes.map(w => `
@@ -338,9 +425,9 @@ function renderDashboard() {
         <div>
           <div class="item-title">${req.activity}</div>
           <div class="item-sub">📍 ${req.location} • ⏰ ${req.time}</div>
-          <div style="display:flex; gap:4px; margin-top:3px;">
+          <div style="display:flex; gap:4px; margin-top:3px; flex-wrap:wrap;">
+            ${req.targetAudience ? `<span class="target-audience-pill">🎯 ${req.targetAudience}</span>` : ''}
             ${req.cost ? `<span class="cost-badge">💶 ${req.cost}</span>` : ''}
-            <span class="parent-presence-pill ${req.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${req.parentPresent}</span>
           </div>
         </div>
       </div>
@@ -368,9 +455,11 @@ function renderDashboard() {
   `).join('');
 }
 
-// Render Ad-Hoc Section (With Parent Cancel Veto & Parent Presence)
+// Render Ad-Hoc Section (With Target Audience & Parent Cancel Veto)
 function renderAdHocList() {
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
   const container = document.getElementById('adhoc-full-list');
+  
   container.innerHTML = state.adHocRequests.map(req => `
     <div class="section-card">
       <div class="card-header">
@@ -385,6 +474,7 @@ function renderAdHocList() {
       </div>
 
       <div style="font-size:12px; margin: 10px 0; display:flex; flex-direction:column; gap:4px; background:var(--bg-subtle); padding:10px; border-radius:var(--radius-md);">
+        <div>🎯 <strong>Empfänger / Zielgruppe:</strong> <span class="target-audience-pill">${req.targetAudience || 'Alle Familien'}</span></div>
         <div>⏰ <strong>Zeit:</strong> ${req.time}</div>
         <div>📍 <strong>Ort:</strong> ${req.location}</div>
         <div>👨‍👩‍👧 <strong>Begleitung:</strong> <span class="parent-presence-pill ${req.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${req.parentPresent}</span></div>
@@ -404,7 +494,7 @@ function renderAdHocList() {
       <div style="display:flex; gap:8px;">
         <button class="btn btn-primary full-width" onclick="respondAdHoc('${req.id}', 'Ich bin dabei!')">👍 Zusage senden</button>
         
-        ${state.activeProfile === 'parent' ? `
+        ${curMember.isParent ? `
           <button class="btn-cancel-adhoc" onclick="cancelAdHocByParent('${req.id}')">🚫 Stornieren (Eltern-Veto)</button>
         ` : `
           <button class="btn btn-secondary full-width" onclick="respondAdHoc('${req.id}', 'Leider keine Zeit')">❌ Absagen</button>
@@ -419,6 +509,7 @@ function cancelAdHocByParent(reqId) {
   const req = state.adHocRequests.find(r => r.id === reqId);
   if (req) {
     state.adHocRequests = state.adHocRequests.filter(r => r.id !== reqId);
+    saveState();
     renderApp();
     showToast(`🚫 Spontan-Anfrage "${req.activity}" durch Eltern storniert.`);
   }
@@ -426,6 +517,7 @@ function cancelAdHocByParent(reqId) {
 
 // Render Recurring Hobbies & Internal/External Driver Logistics
 function renderRecurringHobbies() {
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
   const container = document.getElementById('recurring-hobbies-list');
   container.innerHTML = state.recurringHobbies.map(h => `
     <div class="list-item" style="flex-direction:column; align-items:flex-start;">
@@ -450,7 +542,7 @@ function renderRecurringHobbies() {
             <span class="parent-presence-pill ${h.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${h.parentPresent}</span>
           </div>
         </div>
-        ${state.activeProfile === 'parent' ? `
+        ${curMember.isParent ? `
           <button class="btn btn-ghost btn-sm" onclick="showToast('🚗 Fahrgemeinschaft für ${h.title} angepasst!')">Bearbeiten</button>
         ` : ''}
       </div>
@@ -460,6 +552,7 @@ function renderRecurringHobbies() {
 
 // Render Wishes Section with Approval Actions
 function renderWishesList() {
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
   const matchesContainer = document.getElementById('wish-matches-container');
   matchesContainer.innerHTML = state.wishMatches.map(m => `
     <div class="match-card">
@@ -491,7 +584,7 @@ function renderWishesList() {
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
           <span class="item-status-pill ${statusClass}">${w.status}</span>
           
-          ${state.activeProfile === 'parent' && w.status === 'Ausstehend' ? `
+          ${curMember.isParent && w.status === 'Ausstehend' ? `
             <div class="wish-approval-actions">
               <button class="btn-approve" onclick="approveWish('${w.id}')">Genehmigen ✅</button>
               <button class="btn-decline" onclick="declineWish('${w.id}')">Ablehnen ❌</button>
@@ -508,6 +601,7 @@ function approveWish(wishId) {
   const wish = state.wishes.find(w => w.id === wishId);
   if (wish) {
     wish.status = 'Genehmigt';
+    saveState();
     renderApp();
     showToast(`✅ Wunsch "${wish.category}" für ${wish.child} genehmigt!`);
   }
@@ -517,6 +611,7 @@ function declineWish(wishId) {
   const wish = state.wishes.find(w => w.id === wishId);
   if (wish) {
     wish.status = 'Abgelehnt';
+    saveState();
     renderApp();
     showToast(`❌ Wunsch "${wish.category}" abgelehnt.`);
   }
@@ -527,6 +622,7 @@ function triggerGoogleSync() {
   showToast('🔄 Google Kalender wird synchronisiert...');
   setTimeout(() => {
     state.lastGoogleSync = 'Gerade eben';
+    saveState();
     showToast('✅ Google Kalender erfolgreich abgeglichen! 14 Termine aktualisiert.');
     renderApp();
   }, 1200);
@@ -573,74 +669,52 @@ function renderCalendarEvents() {
 // Render Kid Permissions Settings
 function renderPermissions() {
   const container = document.getElementById('kid-permissions-container');
-  const nick = state.profiles.child_independent;
-  const maya = state.profiles.child_managed;
+  const kids = state.members.filter(m => !m.isParent);
 
-  container.innerHTML = `
+  if (kids.length === 0) {
+    container.innerHTML = `<p style="font-size:12px; color:var(--text-muted)">Keine Kinderprofile vorhanden.</p>`;
+    return;
+  }
+
+  container.innerHTML = kids.map(k => `
     <div class="permission-card">
       <div class="perm-header">
-        <span style="font-size:22px;">👦</span>
+        <span style="font-size:22px;">${k.avatar}</span>
         <div>
-          <strong>Nick (11 Jahre - Eigenes Handy)</strong>
-          <span style="font-size:10px; color:var(--text-muted); display:block;">Eigenständiger Account</span>
+          <strong>${k.name} (${k.age ? k.age + ' Jahre' : 'Kind'})</strong>
+          <span style="font-size:10px; color:var(--text-muted); display:block;">${k.hasOwnDevice ? 'Eigenständiger Account' : 'Verwaltetes Profil'}</span>
         </div>
       </div>
       <div class="perm-options">
         <div class="perm-toggle-row">
           <span>⚡ Darf Spontan-Anfragen direkt senden</span>
           <label class="toggle-switch">
-            <input type="checkbox" ${nick.permissions.canSendAdHocDirectly ? 'checked' : ''} onchange="togglePermission('child_independent', 'canSendAdHocDirectly')">
+            <input type="checkbox" ${k.permissions && k.permissions.canSendAdHocDirectly ? 'checked' : ''} onchange="togglePermission('${k.id}', 'canSendAdHocDirectly')">
             <span class="slider"></span>
           </label>
         </div>
         <div class="perm-toggle-row">
           <span>✨ Wünsche benötigen Eltern-Freigabe</span>
           <label class="toggle-switch">
-            <input type="checkbox" ${nick.permissions.requiresWishApproval ? 'checked' : ''} onchange="togglePermission('child_independent', 'requiresWishApproval')">
+            <input type="checkbox" ${k.permissions && k.permissions.requiresWishApproval ? 'checked' : ''} onchange="togglePermission('${k.id}', 'requiresWishApproval')">
             <span class="slider"></span>
           </label>
         </div>
         <div class="perm-toggle-row">
-          <span>💶 Max. Budget pro Wunsch: <strong>${nick.permissions.maxBudget}</strong></span>
+          <span>💶 Max. Budget pro Wunsch: <strong>${k.permissions ? k.permissions.maxBudget : '15 €'}</strong></span>
         </div>
       </div>
     </div>
-
-    <div class="permission-card">
-      <div class="perm-header">
-        <span style="font-size:22px;">👧</span>
-        <div>
-          <strong>Maya (7 Jahre - Verwaltetes Profil)</strong>
-          <span style="font-size:10px; color:var(--text-muted); display:block;">Profil wird von Eltern gesteuert</span>
-        </div>
-      </div>
-      <div class="perm-options">
-        <div class="perm-toggle-row">
-          <span>⚡ Darf Spontan-Anfragen direkt senden</span>
-          <label class="toggle-switch">
-            <input type="checkbox" ${maya.permissions.canSendAdHocDirectly ? 'checked' : ''} onchange="togglePermission('child_managed', 'canSendAdHocDirectly')">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="perm-toggle-row">
-          <span>✨ Wünsche benötigen Eltern-Freigabe</span>
-          <label class="toggle-switch">
-            <input type="checkbox" ${maya.permissions.requiresWishApproval ? 'checked' : ''} onchange="togglePermission('child_managed', 'requiresWishApproval')">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="perm-toggle-row">
-          <span>💶 Max. Budget pro Wunsch: <strong>${maya.permissions.maxBudget}</strong></span>
-        </div>
-      </div>
-    </div>
-  `;
+  `).join('');
 }
 
-function togglePermission(profileKey, permKey) {
-  const p = state.profiles[profileKey].permissions;
-  p[permKey] = !p[permKey];
-  showToast(`⚙️ Rechte für ${state.profiles[profileKey].name} aktualisiert!`);
+function togglePermission(memberId, permKey) {
+  const m = state.members.find(mem => mem.id === memberId);
+  if (m && m.permissions) {
+    m.permissions[permKey] = !m.permissions[permKey];
+    saveState();
+    showToast(`⚙️ Rechte für ${m.name} aktualisiert!`);
+  }
 }
 
 // Render Connected Families
@@ -678,10 +752,11 @@ function toggleProfileModal() {
 
 function setActiveProfile(roleKey) {
   state.activeProfile = roleKey;
+  saveState();
   closeModal('modal-profile');
   renderApp();
-  const name = state.profiles[roleKey].name;
-  showToast(`👤 Rolle gewechselt zu: ${name}`);
+  const curMember = state.members.find(m => m.id === roleKey) || state.members[0];
+  showToast(`👤 Rolle gewechselt zu: ${curMember.name}`);
 }
 
 // --- Modal Handlers ---
@@ -719,7 +794,7 @@ function handleCreateHobby(event) {
   const newHobby = {
     id: `hob-${Date.now()}`,
     child: child,
-    avatar: child === 'Nick' ? '👦' : '👧',
+    avatar: child.includes('Nick') ? '👦' : (child.includes('Maya') ? '👧' : '👦'),
     title: title,
     schedule: time,
     location: location,
@@ -730,6 +805,7 @@ function handleCreateHobby(event) {
   };
 
   state.recurringHobbies.unshift(newHobby);
+  saveState();
   closeModal('modal-hobby');
   renderApp();
   showToast(`🏆 Wöchentliches Hobby "${title}" gespeichert!`);
@@ -742,6 +818,7 @@ function handleCreateAdHoc(event) {
   const activity = document.getElementById('adhoc-activity').value;
   const time = document.getElementById('adhoc-time').value;
   const location = document.getElementById('adhoc-location').value;
+  const targetAudience = document.getElementById('adhoc-target-audience').value;
   const cost = document.getElementById('adhoc-cost').value;
   const parentPresent = document.getElementById('adhoc-parent-present').value;
 
@@ -752,6 +829,7 @@ function handleCreateAdHoc(event) {
     activity: `⚡ ${activity}`,
     time: time,
     location: location,
+    targetAudience: targetAudience,
     cost: cost || null,
     parentPresent: parentPresent,
     status: 'Aktiv',
@@ -761,20 +839,24 @@ function handleCreateAdHoc(event) {
   };
 
   state.adHocRequests.unshift(newReq);
+  saveState();
   closeModal('modal-adhoc');
   renderApp();
-  showToast(`⚡ Spontan-Anfrage an befreundete Familien gesendet!`);
+  showToast(`⚡ Spontan-Anfrage an ${targetAudience} gesendet!`);
 }
 
 function respondAdHoc(reqId, answerText) {
   const req = state.adHocRequests.find(r => r.id === reqId);
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+
   if (req) {
     req.rsvps.push({
-      family: 'Familie Müller',
-      name: state.profiles[state.activeProfile].name,
+      family: state.currentFamily,
+      name: curMember.name,
       status: `${answerText} ✅`,
-      avatar: state.profiles[state.activeProfile].avatar
+      avatar: curMember.avatar
     });
+    saveState();
     renderApp();
     showToast(`Rückmeldung "${answerText}" gesendet!`);
   }
@@ -787,19 +869,21 @@ function handleCreateWish(event) {
   const category = document.getElementById('wish-category').value;
   const desc = document.getElementById('wish-desc').value;
   const cost = document.getElementById('wish-cost').value;
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
 
   const newWish = {
     id: `wish-${Date.now()}`,
     child: child,
-    avatar: child === 'Nick' ? '👦' : '👧',
+    avatar: child.includes('Nick') ? '👦' : (child.includes('Maya') ? '👧' : '👧'),
     category: category,
     desc: desc || 'Keine Zusatzbeschreibung',
     cost: cost || 'Kostenlos',
-    status: state.activeProfile === 'parent' ? 'Genehmigt' : 'Ausstehend',
+    status: curMember.isParent ? 'Genehmigt' : 'Ausstehend',
     dateAdded: 'Gerade eben'
   };
 
   state.wishes.unshift(newWish);
+  saveState();
   closeModal('modal-wish');
   renderApp();
 
@@ -826,6 +910,7 @@ function createMatchEvent(matchId) {
       source: 'Local',
       status: 'Bestätigt'
     });
+    saveState();
     showToast(`🎉 Gemeinsamer Termin im Kalender angelegt!`);
     switchTab('tab-calendar');
     renderApp();
@@ -849,6 +934,7 @@ function handleConnectFamily() {
     avatar: '🏡'
   });
   
+  saveState();
   closeModal('modal-connect');
   renderApp();
   showToast(`🤝 Familie erfolgreich verknüpft!`);

@@ -31,7 +31,10 @@
         <div class="logo-icon">👨‍👩‍👧‍👦</div>
         <div class="logo-text">
           <h1>FamilyPlaner</h1>
-          <span class="family-badge" id="current-family-badge">Familie Müller</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="family-badge" id="current-family-badge">Familie Müller</span>
+            <span class="live-sync-indicator" id="live-sync-indicator" title="Echtzeit-Synchronisation aktiv">🟢 Live-Sync</span>
+          </div>
         </div>
       </div>
       <div class="header-right">
@@ -66,11 +69,11 @@
           <div class="sync-info">
             <span class="gcal-icon">🗓️</span>
             <div>
-              <strong>Google Kalender: Synchronisiert</strong>
-              <span class="sync-sub">Letzter Sync: Vor 5 Minuten (14 externe Termine)</span>
+              <strong>Google Kalender & Cloud Live-Sync: Aktiv</strong>
+              <span class="sync-sub" id="cloud-sync-sub-text">Echtzeit-Synchronisation mit allen Familien-Handys</span>
             </div>
           </div>
-          <span class="sync-badge active">Aktiv 🔄</span>
+          <span class="sync-badge active">Live 🟢</span>
         </div>
 
         <!-- Quick Actions Grid -->
@@ -137,7 +140,7 @@
         <div class="section-title-bar">
           <div>
             <h2>⚡ Spontane Verabredungen</h2>
-            <p>Wer hat heute spontan Zeit? (Mit Eltern-Begleitungs-Status)</p>
+            <p>Spontan-Anfragen mit gezielter Empfänger- & Zielgruppen-Wahl</p>
           </div>
           <button class="btn btn-primary" onclick="openAdHocModal()">+ Neue Anfrage</button>
         </div>
@@ -226,18 +229,30 @@
         </div>
       </section>
 
-      <!-- TAB 5: FAMILIE & RECHTE-VERWALTUNG -->
+      <!-- TAB 5: FAMILIEN-VERWALTUNG & RECHTE -->
       <section id="tab-friends" class="tab-content">
         <div class="section-title-bar">
           <div>
-            <h2>⚙️ Familien-Verwaltung & Rechte</h2>
-            <p>Befreundete Familien & Kinder-Berechtigungen</p>
+            <h2>👨‍👩‍👧‍👦 Meine Familie & Rechte</h2>
+            <p>Eigene Familienmitglieder verwalten & Rechte einstellen</p>
           </div>
-          <button class="btn btn-secondary" onclick="showConnectModal()">+ Familie verknüpfen</button>
+          <button class="btn btn-primary" onclick="openAddMemberModal()">+ Mitglied hinzufügen</button>
+        </div>
+
+        <!-- Own Family Management Section -->
+        <div class="section-card highlight-card">
+          <div class="card-header">
+            <h3>🏠 Familienmitglieder von <span id="family-title-name">Familie Müller</span></h3>
+            <span class="badge">Eigene Familie</span>
+          </div>
+          <p class="card-sub-desc">Verwalte Eltern, Kinder und deren Geräte-Zugänge.</p>
+          <div id="own-family-members-list" class="grid-list">
+            <!-- Dynamic Content via app.js -->
+          </div>
         </div>
 
         <!-- Kid Rights / Permissions Card -->
-        <div class="section-card highlight-card">
+        <div class="section-card">
           <div class="card-header">
             <h3>🔑 Rechte-Verwaltung für Kinder</h3>
             <span class="badge">Eltern-Kontrolle</span>
@@ -248,7 +263,13 @@
           </div>
         </div>
 
-        <h3>🤝 Befreundete Familien</h3>
+        <div class="section-title-bar" style="margin-top:20px;">
+          <div>
+            <h3>🤝 Befreundete Familien</h3>
+            <p>Vernetzte Familien für Spontan-Anfragen & Fahrgemeinschaften</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="showConnectModal()">+ Familie verknüpfen</button>
+        </div>
         <div id="friends-family-list" class="grid-list">
           <!-- Dynamic Content via app.js -->
         </div>
@@ -276,9 +297,57 @@
       </button>
       <button class="nav-item" data-tab="tab-friends" onclick="switchTab('tab-friends')">
         <span class="nav-icon">⚙️</span>
-        <span class="nav-label">Rechte</span>
+        <span class="nav-label">Familie</span>
       </button>
     </nav>
+  </div>
+
+  <!-- MODAL: ADD / EDIT FAMILY MEMBER -->
+  <div id="modal-add-member" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>👨‍👩‍👧‍👦 Neues Familienmitglied hinzufügen</h3>
+        <button class="close-btn" onclick="closeModal('modal-add-member')">✕</button>
+      </div>
+      <form id="form-add-member" onsubmit="handleAddMember(event)" class="modal-body">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="member-name" class="form-input" placeholder="z.B. Sarah, Leon, Oma Maria..." required>
+        </div>
+
+        <div class="form-group grid-2">
+          <div>
+            <label>Rolle</label>
+            <select id="member-role" class="form-input">
+              <option value="parent">👨‍👩‍👦 Elternteil</option>
+              <option value="child_independent">👦 Kind (eigenes Handy)</option>
+              <option value="child_managed">👧 Kind (verwaltetes Profil)</option>
+            </select>
+          </div>
+          <div>
+            <label>Avatar / Emoji</label>
+            <select id="member-avatar" class="form-input">
+              <option value="👨">👨 Vater / Mann</option>
+              <option value="👩">👩 Mutter / Frau</option>
+              <option value="👦">👦 Junge</option>
+              <option value="👧">👧 Mädchen</option>
+              <option value="👵">👵 Oma</option>
+              <option value="👴">👴 Opa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Alter (Jahre)</label>
+          <input type="number" id="member-age" class="form-input" placeholder="z.B. 38, 12, 6">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-add-member')">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Mitglied speichern</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- MODAL: PROFILE / ROLE SWITCHER -->
@@ -290,46 +359,14 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">Wähle aus, als wer du die App gerade steuerst. Dies zeigt die unterschiedlichen Sichten für Eltern und Kinder (mit/ohne eigenes Handy).</p>
-        
-        <div class="profile-options-list">
-          <!-- Option 1: Parent -->
-          <div class="profile-option-card active" onclick="setActiveProfile('parent')">
-            <div class="profile-avatar large">👨</div>
-            <div class="profile-details">
-              <strong>Tom (Vater)</strong>
-              <span class="role-badge parent">Eltern-Modus</span>
-              <p>Voller Zugriff, Spontan-Veto, Wunsch-Genehmigung & Hol-/Bringdienste.</p>
-            </div>
-            <span class="radio-check">✓</span>
-          </div>
-
-          <!-- Option 2: Independent Child -->
-          <div class="profile-option-card" onclick="setActiveProfile('child_independent')">
-            <div class="profile-avatar large">👦</div>
-            <div class="profile-details">
-              <strong>Nick (11 Jahre - Eigenes Handy)</strong>
-              <span class="role-badge child">Eigener Account</span>
-              <p>Kindgerechte Sicht: Spontan-Anfragen senden, Wünsche eintragen.</p>
-            </div>
-            <span class="radio-check">✓</span>
-          </div>
-
-          <!-- Option 3: Managed Child -->
-          <div class="profile-option-card" onclick="setActiveProfile('child_managed')">
-            <div class="profile-avatar large">👧</div>
-            <div class="profile-details">
-              <strong>Maya (7 Jahre - Verwaltetes Profil)</strong>
-              <span class="role-badge managed">Von Eltern verwaltet</span>
-              <p>Eltern steuern Wünsche & Anfragen für Maya.</p>
-            </div>
-            <span class="radio-check">✓</span>
-          </div>
+        <div id="profile-modal-list" class="profile-options-list">
+          <!-- Dynamic Content via app.js -->
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: NEW AD-HOC REQUEST -->
+  <!-- MODAL: NEW AD-HOC REQUEST (With Target Audience Filter) -->
   <div id="modal-adhoc" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
@@ -340,9 +377,7 @@
         <div class="form-group">
           <label>Wer hat Lust?</label>
           <select id="adhoc-creator-select" class="form-input">
-            <option value="Nick (11 J.)">👦 Nick</option>
-            <option value="Maya (7 J.)">👧 Maya</option>
-            <option value="Familie Müller">👨‍👩‍👧‍👦 Gesamte Familie</option>
+            <!-- Dynamic via app.js -->
           </select>
         </div>
 
@@ -367,6 +402,19 @@
           </div>
         </div>
 
+        <!-- Target Audience Picker -->
+        <div class="form-group">
+          <label>🎯 Zielgruppe & Sichtbarkeit (Wer soll das sehen?)</label>
+          <select id="adhoc-target-audience" class="form-input">
+            <option value="Alle befreundeten Familien">🌐 Alle befreundeten Familien</option>
+            <option value="Nur Familie Weber (Jonas & Emma)">👥 Nur Familie Weber</option>
+            <option value="Nur Familie Fischer (Ben)">👥 Nur Familie Fischer</option>
+            <option value="Nur Jungs (Nick, Jonas, Ben)">👦 Nur Jungs (Nick, Jonas, Ben)</option>
+            <option value="Nur Mädchen (Maya, Emma)">👧 Nur Mädchen (Maya, Emma)</option>
+            <option value="🔒 Nur Familien-Intern (Keine Freunde)">🔒 Nur Familien-Intern (Müller)</option>
+          </select>
+        </div>
+
         <!-- Parent Presence Selection -->
         <div class="form-group">
           <label>👨‍👩‍👧‍👦 Begleitung durch Eltern?</label>
@@ -382,17 +430,9 @@
           <input type="text" id="adhoc-cost" class="form-input" placeholder="z.B. 5 € Eintritt / Kostenlos">
         </div>
 
-        <div class="form-group">
-          <label>Empfänger (Befreundete Familien)</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" checked> Familie Weber (Jonas & Emma)</label>
-            <label class="checkbox-label"><input type="checkbox" checked> Familie Fischer (Ben)</label>
-          </div>
-        </div>
-
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" onclick="closeModal('modal-adhoc')">Abbrechen</button>
-          <button type="submit" class="btn btn-primary">⚡ An befreundete Familien senden</button>
+          <button type="submit" class="btn btn-primary">⚡ Anfrage senden</button>
         </div>
       </form>
     </div>
@@ -409,8 +449,7 @@
         <div class="form-group">
           <label>Für wen ist der Wunsch?</label>
           <select id="wish-child-select" class="form-input">
-            <option value="Nick">👦 Nick</option>
-            <option value="Maya">👧 Maya</option>
+            <!-- Dynamic via app.js -->
           </select>
         </div>
 
@@ -445,7 +484,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NEW RECURRING HOBBY (Internal & External Driver Logistics) -->
+  <!-- MODAL: NEW RECURRING HOBBY -->
   <div id="modal-hobby" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
@@ -456,8 +495,7 @@
         <div class="form-group">
           <label>Für wen?</label>
           <select id="hobby-child-select" class="form-input">
-            <option value="Nick">👦 Nick</option>
-            <option value="Maya">👧 Maya</option>
+            <!-- Dynamic via app.js -->
           </select>
         </div>
 
@@ -477,7 +515,7 @@
           </div>
         </div>
 
-        <!-- Internal & External Driver Selection -->
+        <!-- Driver Selection -->
         <div class="form-group">
           <label>🚗 Hin-Fahrt (Bringdienst - Wer bringt?)</label>
           <select id="hobby-bring" class="form-input">
