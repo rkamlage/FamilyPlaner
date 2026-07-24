@@ -602,6 +602,9 @@ function renderDashboard() {
   const filterDate = new Date();
   let filterStr = state.homeFilter; // 'today', 'tomorrow', 'week', 'all'
   
+  const personFilterEl = document.getElementById('home-person-filter');
+  const personFilter = personFilterEl ? personFilterEl.value : 'all';
+  
   // Pending Wish Approvals (Only visible to parents)
   const approvalWidget = document.getElementById('parent-approval-widget');
   const pendingWishes = state.wishes.filter(w => w.status === 'Ausstehend' && (personFilter === 'all' || w.child === personFilter));
