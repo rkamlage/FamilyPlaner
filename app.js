@@ -62,13 +62,20 @@ async function initSupabase() {
   
   if (userProfile) {
     console.log('User profile loaded, updating UI...', userProfile);
-    state.currentFamily = userProfile.family_id || 'Meine Familie';
     state.activeProfile = userProfile.id; // User UUID from our DB
     currentFamilyId = userProfile.family_id;
     
+    // Fetch real family name
+    const { data: familyData } = await db.from('families').select('name').eq('id', currentFamilyId).single();
+    if (familyData) {
+      state.currentFamily = familyData.name;
+    } else {
+      state.currentFamily = 'Meine Familie';
+    }
+    
     // Check if they are admin
     if (userProfile.is_admin) {
-       console.log("Logged in as Family Admin");
+      state.isFamilyAdmin = true;
     }
   }
 
@@ -1229,7 +1236,7 @@ function safeStorageRemove(key) {
 function loadState() {
   const saved = safeStorageGet('familyplaner_state');
   if (saved) {
-    state = JSON.parse(saved);
+    state = { ...defaultState, ...JSON.parse(saved) };
   }
 }
 
