@@ -98,14 +98,7 @@
         </div>
 
         <!-- External Calendar Sync Quick Status Bar -->
-        <div class="sync-status-box" onclick="switchTab('tab-appointments')">
-          <div class="sync-info">
-            <span class="gcal-icon">🗓️</span>
-            <div>
-              <strong>Google Kalender & Cloud Live-Sync: Aktiv</strong>
-              <span class="sync-sub" id="cloud-sync-sub-text">Echtzeit-Synchronisation mit allen Familien-Handys</span>
-            </div>
-          </div>
+        
           <span class="sync-badge active">Live 🟢</span>
         </div>
 
@@ -284,7 +277,28 @@
             <button id="btn-add-member" class="btn btn-primary" onclick="openAddMemberModal()">+ Mitglied hinzufügen</button>
           </div>
           
-          <div id="settings-family-code-content"></div>
+          
+            <div class="section-card" style="margin-bottom:15px;">
+              <div class="card-header">
+                <h3>👨‍👩‍👧‍👦 Familien-Mitglied einladen</h3>
+              </div>
+              <p style="font-size:12px; margin-bottom:10px;">Lade deine Kinder oder deinen Partner in diese Familie ein. Der Code ist temporär gültig.</p>
+              <div style="background:var(--bg-app); border-radius:var(--radius-md); padding:10px; text-align:center;">
+                <div id="invite-code-member" style="font-size:24px; font-weight:bold; letter-spacing:2px; font-family:monospace; margin-bottom:5px;">LADEN...</div>
+                <button class="text-btn" onclick="generateNewInviteCode('member')">🔄 Neu generieren</button>
+              </div>
+            </div>
+            
+            <div class="section-card" style="margin-bottom:15px;">
+              <div class="card-header">
+                <h3>🤝 Befreundete Familie verknüpfen</h3>
+              </div>
+              <p style="font-size:12px; margin-bottom:10px;">Teile diesen Code mit befreundeten Eltern, damit ihr euch verknüpfen könnt.</p>
+              <div style="background:var(--bg-app); border-radius:var(--radius-md); padding:10px; text-align:center;">
+                <div id="invite-code-friend" style="font-size:24px; font-weight:bold; letter-spacing:2px; font-family:monospace; margin-bottom:5px; color:var(--primary);">LADEN...</div>
+                <button class="text-btn" onclick="generateNewInviteCode('friend')">🔄 Neu generieren</button>
+              </div>
+            </div>
 
           <!-- Own Family Card -->
           <div id="card-settings-own-family" class="section-card" style="border-color: var(--primary);">
@@ -529,14 +543,15 @@
 
         <div class="form-group">
           <label>Kategorie / Wunsch</label>
-          <select id="wish-category" class="form-input">
-            <option value="🏊 Schwimmbad">🏊 Schwimmbad / Rutschen</option>
-            <option value="🎬 Kino">🎬 Kino / Filmabend</option>
-            <option value="⚽ Fußball / Sport">⚽ Fußball / Sport</option>
-            <option value="🎲 Brettspiele">🎲 Brettspiel-Nachmittag</option>
-            <option value="🍦 Eis essen">🍦 Eis essen gehen</option>
-            <option value="🧗 Klettern / Spielplatz">🧗 Klettern / Abenteuerspielplatz</option>
-          </select>
+          <input type="text" id="wish-category" class="form-input" list="wish-categories" placeholder="Tippen oder auswählen" required>
+            <datalist id="wish-categories">
+              <option value="🏊 Schwimmbad / Rutschen">
+              <option value="🎬 Kino / Filmabend">
+              <option value="⚽ Fußball / Sport">
+              <option value="🎲 Brettspiel-Nachmittag">
+              <option value="🍦 Eis essen gehen">
+              <option value="🧗 Klettern / Abenteuerspielplatz">
+            </datalist>
         </div>
 
         <div class="form-group">
@@ -826,7 +841,9 @@
 
           <div class="form-group">
             <label>Für wen? (Kind/Familie)</label>
-            <select id="appt-child" class="form-input"></select>
+            <div id="appt-child-checkboxes" class="checkbox-group" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- Populated dynamically via app.js -->
+            </div>
           </div>
 
           <div style="display:flex; gap:10px;">

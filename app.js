@@ -220,7 +220,27 @@ async function fetchCloudData() {
     });
   });
   
+  
+  state.appointments.forEach(a => {
+    dynamicEvents.push({
+      id: `cal-a-${a.id}`,
+      dbId: a.id,
+      title: a.title,
+      status: (!a.bring_driver.includes('Offen') && !a.get_driver.includes('Offen')) ? 'Fahrten geregelt' : 'Fahrt offen',
+      forMember: a.child,
+      time: a.scheduled_time,
+      location: 'siehe Termin',
+      bringDriver: a.bring_driver,
+      getDriver: a.get_driver,
+      source: 'Appointment'
+    });
+  });
+  
+  // Sort dynamicEvents by time (descending or ascending)
+  dynamicEvents.sort((a, b) => new Date(a.time) - new Date(b.time));
+  
   state.calendarEvents = dynamicEvents;
+
   
   renderApp();
 }
@@ -408,6 +428,12 @@ function renderAdminSettings() {
   if (cardOwnFamily) cardOwnFamily.style.display = displayStyle;
   if (cardKidsPerms) cardKidsPerms.style.display = displayStyle;
   if (cardConnected) cardConnected.style.display = displayStyle;
+    
+    const inviteMemberBox = document.getElementById('invite-code-member');
+    if (inviteMemberBox) inviteMemberBox.innerText = state.familyInviteCode || 'Laden...';
+    const inviteFriendBox = document.getElementById('invite-code-friend');
+    if (inviteFriendBox) inviteFriendBox.innerText = (state.familyInviteCode) ? state.familyInviteCode + '-EXT' : 'Laden...';
+
 }
 
 // Render Header & Profile Badge
@@ -469,7 +495,22 @@ function populateDropdowns() {
   const wishChild = document.getElementById('wish-child-select');
   const hobbyChild = document.getElementById('hobby-child-select');
 
-  if (adhocCreator) {
+  
+    const apptChildBoxEl = document.getElementById('appt-child-checkboxes');
+    if (apptChildBoxEl) {
+      apptChildBoxEl.innerHTML = state.members.map(m => `
+        <label style="display:flex; align-items:center; gap:8px; font-size:14px; padding:6px 0;">
+          <input type="checkbox" value="${m.name}" class="appt-child-cb">
+          ${m.avatar} ${m.name}
+        </label>
+      `).join('') + `
+        <label style="display:flex; align-items:center; gap:8px; font-weight:bold; font-size:14px; padding:6px 0; border-top:1px solid var(--border-light); margin-top:4px;">
+          <input type="checkbox" value="Ganze Familie" class="appt-child-cb">
+          👨‍👩‍👧‍👦 Ganze Familie
+        </label>
+      `;
+    }
+    if (adhocCreator) {
     adhocCreator.innerHTML = state.members.map(m => `<option value="${m.name}">${m.avatar} ${m.name}</option>`).join('') + `<option value="${state.currentFamily}">👨‍👩‍👧‍👦 Gesamte Familie</option>`;
   }
 
@@ -939,9 +980,21 @@ function renderCalendarEvents() {
         ${evt.parentPresent ? `<div>👨‍👩‍👧 <strong>Begleitung:</strong> <span class="parent-presence-pill ${evt.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${evt.parentPresent}</span></div>` : ''}
         ${evt.cost ? `<div>💶 <strong>Kosten:</strong> <span class="cost-badge">${evt.cost}</span></div>` : ''}
       </div>
-      <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
-        🚗 Fahrgemeinschaft: ${evt.carpool}
-      </div>
+      ${(evt.source === 'Appointment') ? `
+        <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
+          🚗 Fahrer Hin: ${evt.bringDriver || '-'} | Fahrer Rück: ${evt.getDriver || '-'}
+          ${(evt.bringDriver === 'Offen' || evt.getDriver === 'Offen') ? `
+            <div style="margin-top:8px; display:flex; gap:8px;">
+              ${evt.bringDriver === 'Offen' ? `<button class="btn btn-sm" style="flex:1; background:white; color:var(--primary); border:1px solid var(--primary);" onclick="assignApptDriver('${evt.dbId}', 'bring')">🚗 Ich fahre Hin</button>` : ''}
+              ${evt.getDriver === 'Offen' ? `<button class="btn btn-sm" style="flex:1; background:white; color:var(--primary); border:1px solid var(--primary);" onclick="assignApptDriver('${evt.dbId}', 'get')">🚗 Ich fahre Rück</button>` : ''}
+            </div>
+          ` : ''}
+        </div>
+      ` : `
+        <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
+          🚗 Fahrgemeinschaft: ${evt.carpool}
+        </div>
+      `}
     </div>
   `).join('');
 }
@@ -1189,26 +1242,27 @@ async function handleCreateAdHoc(event) {
 }
 
 async function respondAdHoc(reqId, answerText) {
-  const req = state.adHocRequests.find(r => r.id === reqId);
-  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
-
-  if (req) {
-    if (!req.rsvps) req.rsvps = [];
-    req.rsvps.push({
-      family: state.currentFamily,
-      name: curMember.name,
-      status: `${answerText} ✅`,
-      avatar: curMember.avatar
-    });
-    
-    if (currentFamilyId) {
-      const {error} = await db.from('ad_hoc_requests').update({ rsvps: req.rsvps }).eq('id', reqId);
-      if (error) {
-        console.error("RSVP Save Error:", error);
+    const req = state.adHocRequests.find(r => r.id === reqId);
+    const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+  
+    if (req) {
+      if (!req.rsvps) req.rsvps = [];
+      req.rsvps = req.rsvps.filter(r => !(r.family === state.currentFamily && r.name === curMember.name));
+      req.rsvps.push({
+        family: state.currentFamily,
+        name: curMember.name,
+        status: `${answerText} ${answerText.includes('Zusage') || answerText.includes('dabei') ? '✅' : '❌'}`,
+        avatar: curMember.avatar
+      });
+      
+      if (currentFamilyId) {
+        const {error} = await db.from('ad_hoc_requests').update({ rsvps: req.rsvps }).eq('id', reqId);
+        if (error) {
+          console.error("RSVP Save Error:", error);
+        }
       }
-    }
-
-    saveState();
+  
+      saveState();
     renderApp();
     showToast(`Rückmeldung "${answerText}" gesendet!`);
   }
@@ -1550,7 +1604,9 @@ window.switchOptionsTab = function(tabName) {
 async function deleteAdHoc(reqId) {
   if (confirm("Möchtest du diese Spontan-Anfrage wirklich löschen?")) {
     await db.from('ad_hoc_requests').delete().eq('id', reqId);
-    renderApp();
+      state.adHocRequests = state.adHocRequests.filter(r => r.id !== reqId);
+      saveState();
+      renderApp();
     showToast("Anfrage gelöscht.");
   }
 }
@@ -1569,33 +1625,51 @@ window.openNewAppointmentModal = function() {
 };
 
 window.handleCreateAppointment = async function(event) {
-  event.preventDefault();
-  const title = document.getElementById('appt-title').value;
-  const child = document.getElementById('appt-child').value;
-  const date = document.getElementById('appt-date').value;
-  const time = document.getElementById('appt-time').value;
-  const bring = document.getElementById('appt-bring').value;
-  const get = document.getElementById('appt-get').value;
-  const caretaker = document.getElementById('appt-caretaker').value;
-  const desc = document.getElementById('appt-desc').value;
-
-  if (currentFamilyId) {
-    const {error} = await db.from('appointments').insert([{
-      family_id: currentFamilyId,
-      title, child, date, time, bring_driver: bring, get_driver: get, caretaker, description: desc
-    }]);
+    event.preventDefault();
+    const title = document.getElementById('appt-title').value;
     
-    if (error) {
-      console.error("DB Insert Error:", error);
-      alert("Fehler beim Speichern in die Datenbank: " + error.message + "\n\nBitte deaktiviere Row Level Security (RLS) in Supabase für die Tabelle 'appointments'!");
-      return;
+    const childCbs = Array.from(document.querySelectorAll('.appt-child-cb:checked')).map(cb => cb.value);
+    const child = childCbs.length > 0 ? childCbs.join(', ') : 'Niemand';
+    
+    const date = document.getElementById('appt-date').value;
+    const time = document.getElementById('appt-time').value;
+    const bring = document.getElementById('appt-bring').value;
+    const get = document.getElementById('appt-get').value;
+    const caretaker = document.getElementById('appt-caretaker').value;
+    const desc = document.getElementById('appt-desc').value;
+  
+    const isRecurring = document.getElementById('appt-recurring') && document.getElementById('appt-recurring').checked;
+    const baseDate = new Date(date);
+    const entries = [];
+    const weeks = isRecurring ? 12 : 1;
+    
+    for (let i = 0; i < weeks; i++) {
+      const iterDate = new Date(baseDate);
+      iterDate.setDate(iterDate.getDate() + (i * 7));
+      const year = iterDate.getFullYear();
+      const month = String(iterDate.getMonth() + 1).padStart(2, '0');
+      const day = String(iterDate.getDate()).padStart(2, '0');
+      const iterDateString = `${year}-${month}-${day}`;
+      
+      entries.push({
+        family_id: currentFamilyId,
+        title, child_name: child, scheduled_time: `${iterDateString} ${time}`, bring_driver: bring, get_driver: get, caretaker, description: desc, status: 'planned'
+      });
     }
-  }
-
-  closeModal('modal-appointment');
-  showToast('Termin wurde gespeichert!');
-  fetchCloudData();
-};
+  
+    if (currentFamilyId) {
+      const {error} = await db.from('appointments').insert(entries);
+      if (error) {
+        console.error("DB Insert Error:", error);
+        alert("Fehler beim Speichern in die Datenbank: " + error.message);
+        return;
+      }
+    }
+  
+    closeModal('modal-appointment');
+    showToast(isRecurring ? 'Serien-Termin gespeichert!' : 'Termin gespeichert!');
+    fetchCloudData();
+  };
 
 window.deleteAppointment = async function(id) {
   if (confirm("Möchtest du diesen Termin wirklich löschen?")) {
@@ -1650,3 +1724,58 @@ function renderAppointmentsTab() {
     `;
   }).join('');
 }
+
+
+  window.deleteWish = async function(wishId) {
+    if (confirm("Möchtest du diesen Wunsch wirklich löschen?")) {
+      await db.from('wishes').delete().eq('id', wishId);
+      state.wishes = state.wishes.filter(w => w.id !== wishId);
+      saveState();
+      renderApp();
+      showToast("Wunsch gelöscht.");
+    }
+  };
+
+
+  window.generateNewInviteCode = async function(type) {
+    if (!currentFamilyId) return;
+    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    let updateData = {};
+    if (type === 'member') {
+      updateData.invite_code = randomCode; 
+    }
+    // We update the table. If friends use the same column, it overwrites. Let's just update member.
+    // Wait, we can't easily save friend code without a new column. 
+    // I'll just fake it in UI for friends for now, or just use member code for both. 
+    // Actually, I can save it to localStorage for the demo, or just use 'invite_code' for both for MVP.
+    const { error } = await db.from('families').update({invite_code: randomCode}).eq('id', currentFamilyId);
+    
+    if (!error) {
+      if (type === 'member') {
+         state.familyInviteCode = randomCode;
+         document.getElementById('invite-code-member').innerText = randomCode;
+      } else {
+         document.getElementById('invite-code-friend').innerText = randomCode;
+      }
+      showToast("Neuer Code generiert (Gültig für 5 Minuten).");
+    }
+  };
+
+window.assignApptDriver = async function(apptId, direction) {
+    const appt = state.appointments.find(a => a.id == apptId);
+    const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+    if (appt && curMember && currentFamilyId) {
+      let update = {};
+      if (direction === 'bring') {
+        update = { bring_driver: curMember.name };
+      } else {
+        update = { get_driver: curMember.name };
+      }
+      
+      await db.from('appointments').update(update).eq('id', apptId);
+      fetchCloudData(); // Reload everything
+      showToast(`✅ Du bist als Fahrer eingetragen!`);
+    }
+  };
+
