@@ -229,6 +229,31 @@ if (window.BroadcastChannel) {
   };
 }
 
+// Theme Switcher Handler
+function setAppTheme(themeMode) {
+  document.body.classList.remove('theme-light', 'theme-dark');
+  document.querySelectorAll('#theme-btn-light, #theme-btn-dark, #theme-btn-auto').forEach(btn => btn.classList.remove('active'));
+
+  if (themeMode === 'light') {
+    document.body.classList.add('theme-light');
+    const btn = document.getElementById('theme-btn-light');
+    if (btn) btn.classList.add('active');
+  } else if (themeMode === 'dark') {
+    document.body.classList.add('theme-dark');
+    const btn = document.getElementById('theme-btn-dark');
+    if (btn) btn.classList.add('active');
+  } else {
+    const btn = document.getElementById('theme-btn-auto');
+    if (btn) btn.classList.add('active');
+  }
+
+  localStorage.setItem('familyplaner_theme', themeMode);
+}
+
+// Restore saved theme on startup
+const savedTheme = localStorage.getItem('familyplaner_theme') || 'auto';
+setTimeout(() => setAppTheme(savedTheme), 100);
+
 // --- DOM Initialization & Render ---
 document.addEventListener('DOMContentLoaded', () => {
   renderApp();

@@ -229,14 +229,27 @@
         </div>
       </section>
 
-      <!-- TAB 5: FAMILIEN-VERWALTUNG & RECHTE -->
+      <!-- TAB 5: FAMILIEN-VERWALTUNG & EINSTELLUNGEN -->
       <section id="tab-friends" class="tab-content">
         <div class="section-title-bar">
           <div>
-            <h2>👨‍👩‍👧‍👦 Meine Familie & Rechte</h2>
-            <p>Eigene Familienmitglieder verwalten & Rechte einstellen</p>
+            <h2>⚙️ Einstellungen & Familie</h2>
+            <p>Design/Theme, Standard-Einstellungen & Familienmitglieder</p>
           </div>
           <button class="btn btn-primary" onclick="openAddMemberModal()">+ Mitglied hinzufügen</button>
+        </div>
+
+        <!-- Theme & Display Mode Card -->
+        <div class="section-card">
+          <div class="card-header">
+            <h3>🎨 Erscheinungsbild & Theme</h3>
+            <span class="badge">Kontrast / Modus</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="pill" id="theme-btn-light" onclick="setAppTheme('light')">☀️ Hell</button>
+            <button class="pill" id="theme-btn-dark" onclick="setAppTheme('dark')">🌙 Dunkel</button>
+            <button class="pill active" id="theme-btn-auto" onclick="setAppTheme('auto')">📱 System (Auto)</button>
+          </div>
         </div>
 
         <!-- Own Family Management Section -->
@@ -297,7 +310,7 @@
       </button>
       <button class="nav-item" data-tab="tab-friends" onclick="switchTab('tab-friends')">
         <span class="nav-icon">⚙️</span>
-        <span class="nav-label">Familie</span>
+        <span class="nav-label">Optionen</span>
       </button>
     </nav>
   </div>
