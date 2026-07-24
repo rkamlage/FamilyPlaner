@@ -72,21 +72,6 @@
       <p>Familien-Überblick & Termine</p>
     </div>
   </div>
-
-  <div class="form-group" style="margin-bottom: 15px;">
-    <label>Ansicht filtern für:</label>
-    <select id="home-person-filter" class="form-input" onchange="renderApp()">
-      <option value="all">👨‍👩‍👧‍👦 Ganze Familie</option>
-      <!-- Dynamic via app.js -->
-    </select>
-  </div>
-
-  <div class="filter-pills" style="margin-bottom: 15px;" id="home-filters">
-    <button class="pill active" onclick="setHomeFilter('today', this)">Heute</button>
-    <button class="pill" onclick="setHomeFilter('tomorrow', this)">Morgen</button>
-    <button class="pill" onclick="setHomeFilter('week', this)">Diese Woche</button>
-    <button class="pill" onclick="setHomeFilter('all', this)">Alle</button>
-  </div>
   
   <!-- Mode Announcement Banner -->
         <div class="mode-banner" id="mode-banner">
@@ -119,6 +104,21 @@
             <span class="action-sub">Eintragen</span>
           </button>
         </div>
+
+  <div class="form-group" style="margin-bottom: 15px;">
+    <label>Ansicht filtern für:</label>
+    <select id="home-person-filter" class="form-input" onchange="renderApp()">
+      <option value="all">👨‍👩‍👧‍👦 Ganze Familie</option>
+      <!-- Dynamic via app.js -->
+    </select>
+  </div>
+
+  <div class="filter-pills" style="margin-bottom: 15px;" id="home-filters">
+    <button class="pill active" onclick="setHomeFilter('today', this)">Heute</button>
+    <button class="pill" onclick="setHomeFilter('tomorrow', this)">Morgen</button>
+    <button class="pill" onclick="setHomeFilter('week', this)">Diese Woche</button>
+    <button class="pill" onclick="setHomeFilter('all', this)">Alle</button>
+  </div>
 
         <!-- Pending Wish Approvals Widget (Visible for Parents) -->
         <div class="section-card" id="parent-approval-widget">
@@ -153,16 +153,7 @@
           </div>
         </div>
 
-        <!-- Today's Schedule Overview -->
-        <div class="section-card">
-          <div class="card-header">
-            <h3>📅 Heute im Familienkalender</h3>
-            <button class="text-btn" onclick="switchTab('tab-appointments')">Alle anzeigen →</button>
-          </div>
-          <div id="dashboard-today-list" class="card-list">
-            <!-- Dynamic Content via app.js -->
-          </div>
-        </div>
+        
 
         <br><br>
         <!-- Calendar Filter Tabs -->
@@ -236,20 +227,7 @@
           <button class="btn btn-primary" onclick="openNewAppointmentModal()">+ Neuer Termin</button>
         </div>
 
-        <!-- Google Calendar Integration Box -->
-        <div class="section-card highlight-card">
-          <div class="card-header">
-            <h3>🌐 Externer Kalender-Import</h3>
-            <span class="badge green">Google Sync</span>
-          </div>
-          <div class="gcal-sync-row">
-            <div>
-              <strong style="font-size:13px;">Google Calendar (<span id="google-sync-family-name">Familie</span>)</strong>
-              <p style="font-size:11px; color:var(--text-muted);">Synchronisiert Schultage, Eltern-Termine & Feiertage.</p>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="triggerGoogleSync()">🔄 Jetzt syncen</button>
-          </div>
-        </div>
+        
 
         <div id="tab-appointments-list" style="padding: 0 20px 100px 20px;">
           <!-- Populated dynamically -->
