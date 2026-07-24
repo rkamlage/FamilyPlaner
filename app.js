@@ -7,25 +7,17 @@ const APP_VERSION = "v0.0.6";
 
 // --- Application State ---
 const defaultState = {
-  activeProfile: 'parent', // 'parent' | 'child_independent' | 'child_managed'
+  activeProfile: 'parent',
   currentFamily: 'Meine Familie',
   googleCalendarSynced: true,
   lastGoogleSync: 'Vor 5 Minuten',
-
-  // Family Members Management (Addable/Editable)
   members: [],
-
-  // Ad-Hoc Requests ("Wer hat JETZT Lust?")
   adHocRequests: [],
-
-  // Family Wishes (Shared bucket)
   wishes: [],
-
-  // Recurring Hobbies / Activities
+  wishMatches: [],
   recurringHobbies: [],
-
-  // Calendar Events
-  calendarEvents: []
+  calendarEvents: [],
+  connectedFamilies: []
 };
 
 // --- Supabase Cloud & Live Sync Engine ---
@@ -366,7 +358,7 @@ function renderOwnFamilyMembers() {
 }
 
 // Add New Family Member
-function handleAddMember(event) {
+async function handleAddMember(event) {
   event.preventDefault();
   const name = document.getElementById('member-name').value;
   const role = document.getElementById('member-role').value;
@@ -376,19 +368,29 @@ function handleAddMember(event) {
   const isParent = role === 'parent';
   const hasOwnDevice = role === 'child_independent';
 
-  const newMember = {
-    id: `mem-${Date.now()}`,
+  // We save this as a pseudo-user to the Supabase users table
+  const { data, error } = await db.from('users').insert([{
     name: name,
     role: role,
-    avatar: avatar,
-    age: age ? parseInt(age) : null,
+    is_parent: isParent,
+    family_id: currentFamilyId
+  }]).select().single();
+  
+  if (error) {
+    alert('Fehler beim Speichern in die Datenbank: ' + error.message);
+    return;
+  }
+
+  const newMember = {
+    id: data.id, // the UUID from Supabase
+    name: name,
+    role: role,
+    avatar: isParent ? '👨' : '👦', // fallback emoji mapping
     isParent: isParent,
-    hasOwnDevice: hasOwnDevice,
-    permissions: !isParent ? { canSendAdHocDirectly: true, requiresWishApproval: true, maxBudget: '15 €' } : null
+    hasOwnDevice: hasOwnDevice
   };
 
   state.members.push(newMember);
-  saveState();
   closeModal('modal-add-member');
   renderApp();
   showToast(`👨‍👩‍👧‍👦 Neues Familienmitglied "${name}" hinzugefügt!`);
