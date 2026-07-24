@@ -161,12 +161,15 @@ async function fetchCloudData() {
   
   if (membersRes.data && membersRes.data.length > 0) {
     state.members = membersRes.data.map(u => ({
-      id: u.id,
-      name: u.name,
-      role: u.role,
-      avatar: u.is_parent ? '👨' : '👦',
-      isParent: u.is_parent
-    }));
+        id: u.id,
+        name: u.name,
+        role: u.role,
+        avatar: u.is_parent ? '👨' : '👦',
+        isParent: u.is_parent,
+        age: u.age,
+        hasOwnDevice: u.has_own_device,
+        permissions: u.permissions || { canSendAdHocDirectly: false, requiresWishApproval: true }
+      }));
     
     // Set active profile if parent logged in
     if (!state.members.find(m => m.id === state.activeProfile) && state.members.length > 0) {
@@ -382,6 +385,7 @@ function renderApp() {
   renderWishesList();
   renderRecurringHobbies();
   renderCalendarEvents();
+  renderAppointmentsTab();
   renderOwnFamilyMembers();
   renderPermissions();
   renderConnectedFamilies();
@@ -955,14 +959,24 @@ function renderPermissions() {
   `).join('');
 }
 
-function togglePermission(memberId, permKey) {
+window.togglePermission = async function(memberId, permKey) {
   const m = state.members.find(mem => mem.id === memberId);
-  if (m && m.permissions) {
+  if (m) {
+    if (!m.permissions) m.permissions = {};
     m.permissions[permKey] = !m.permissions[permKey];
+    
+    // Save to DB
+    if (currentFamilyId) {
+      await db.from('users').update({ permissions: m.permissions }).eq('id', memberId);
+    }
+    
     saveState();
-    showToast(`⚙️ Rechte für ${m.name} aktualisiert!`);
+    showToast(`✅ Rechte aktualisiert!`);
   }
 }
+
+// Keep the old function signature just in case
+function togglePermission(memberId, permKey) { window.togglePermission(memberId, permKey); }
 
 // Render Connected Families
 function renderConnectedFamilies() {
@@ -1142,6 +1156,7 @@ async function handleCreateAdHoc(event) {
 
   closeModal('modal-adhoc');
   showToast(`⚡ Spontan-Anfrage an ${targetAudience} gesendet!`);
+  fetchCloudData();
 }
 
 async function respondAdHoc(reqId, answerText) {
@@ -1156,6 +1171,14 @@ async function respondAdHoc(reqId, answerText) {
       status: `${answerText} ✅`,
       avatar: curMember.avatar
     });
+    
+    if (currentFamilyId) {
+      const {error} = await db.from('ad_hoc_requests').update({ rsvps: req.rsvps }).eq('id', reqId);
+      if (error) {
+        console.error("RSVP Save Error:", error);
+      }
+    }
+
     saveState();
     renderApp();
     showToast(`Rückmeldung "${answerText}" gesendet!`);
@@ -1528,10 +1551,16 @@ window.handleCreateAppointment = async function(event) {
   const desc = document.getElementById('appt-desc').value;
 
   if (currentFamilyId) {
-    await db.from('appointments').insert([{
+    const {error} = await db.from('appointments').insert([{
       family_id: currentFamilyId,
       title, child, date, time, bring_driver: bring, get_driver: get, caretaker, description: desc
     }]);
+    
+    if (error) {
+      console.error("DB Insert Error:", error);
+      alert("Fehler beim Speichern in die Datenbank: " + error.message + "\n\nBitte deaktiviere Row Level Security (RLS) in Supabase für die Tabelle 'appointments'!");
+      return;
+    }
   }
 
   closeModal('modal-appointment');
@@ -1556,3 +1585,39 @@ window.deleteHobby = async function() {
     fetchCloudData();
   }
 };
+
+
+function renderAppointmentsTab() {
+  const container = document.getElementById('tab-appointments-list');
+  if (!container) return;
+
+  if (!state.appointments || state.appointments.length === 0) {
+    container.innerHTML = `<div class="empty-state">Noch keine Termine eingetragen.</div>`;
+    return;
+  }
+
+  const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
+
+  container.innerHTML = state.appointments.map(appt => {
+    const isMine = appt.child === curMember.name || appt.bringDriver === curMember.name || appt.getDriver === curMember.name || appt.caretaker === curMember.name;
+    const highlightClass = isMine ? 'highlight-item' : '';
+
+    return `
+      <div class="list-item ${highlightClass}" onclick="alert('Details für: ${appt.title}')">
+        <div class="list-item-left">
+          <span class="item-avatar">📅</span>
+          <div>
+            <div class="item-title">${appt.title} <span style="font-size:10px; color:var(--text-muted);">für ${appt.child}</span></div>
+            <div class="item-sub">⏱️ ${appt.date} um ${appt.time} Uhr</div>
+            <div class="item-sub" style="margin-top:4px;">
+              🚗 Bringt: ${appt.bringDriver || '?'} | Holt: ${appt.getDriver || '?'} <br>
+              👀 Betreuung: ${appt.caretaker || 'Niemand'}
+            </div>
+            ${appt.description ? `<div class="item-sub" style="margin-top:4px; font-style:italic;">📝 ${appt.description}</div>` : ''}
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="color:var(--danger); padding:5px;" onclick="event.stopPropagation(); deleteAppointment('${appt.id}')">🗑️</button>
+      </div>
+    `;
+  }).join('');
+}
