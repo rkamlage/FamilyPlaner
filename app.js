@@ -205,13 +205,40 @@ const state = Object.assign({}, defaultState);
 async function initSupabase() {
   if (!supabase) return;
   
-  // 1. Get or Create Default Family
-  let { data: families } = await supabase.from('families').select('*').eq('invite_code', 'MUELLER-2026-FP').limit(1);
-  if (!families || families.length === 0) {
-    const { data: newFam } = await supabase.from('families').insert([{ name: 'Familie Müller', invite_code: 'MUELLER-2026-FP' }]).select();
-    if (newFam) currentFamilyId = newFam[0].id;
+  // Check for active session
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    // Show Auth Overlay
+    document.getElementById('auth-overlay').style.display = 'flex';
+    return;
+  }
+  
+  // Hide Auth Overlay if logged in
+  document.getElementById('auth-overlay').style.display = 'none';
+
+  // 1. Get current user profile and family
+  const { data: userProfile } = await supabase.from('users').select('*').eq('auth_id', session.user.id).single();
+  
+  if (userProfile) {
+    currentFamilyId = userProfile.family_id;
+    // Set active profile based on logged-in user
+    state.activeProfile = userProfile.id; // Switch active profile to real user ID
+    
+    // Check if they are admin
+    if (userProfile.is_admin) {
+       console.log("Logged in as Family Admin");
+    }
   } else {
-    currentFamilyId = families[0].id;
+    // Fallback if no user profile is found but auth exists
+    console.warn("User profile not linked. Proceeding with default logic.");
+    let { data: families } = await supabase.from('families').select('*').eq('invite_code', 'MUELLER-2026-FP').limit(1);
+    if (!families || families.length === 0) {
+      const { data: newFam } = await supabase.from('families').insert([{ name: 'Familie Müller', invite_code: 'MUELLER-2026-FP' }]).select();
+      if (newFam) currentFamilyId = newFam[0].id;
+    } else {
+      currentFamilyId = families[0].id;
+    }
   }
 
   // 2. Fetch Initial Data
@@ -616,8 +643,18 @@ function cancelAdHocByParent(reqId) {
 function renderRecurringHobbies() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
   const container = document.getElementById('recurring-hobbies-list');
-  container.innerHTML = state.recurringHobbies.map(h => `
-    <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+  
+  if (state.recurringHobbies.length === 0) {
+    container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:12px; margin:20px 0;">Keine wöchentlichen Hobbys hinterlegt.</p>';
+    return;
+  }
+  
+  container.innerHTML = state.recurringHobbies.map(h => {
+    const isClickable = curMember.isParent ? `cursor:pointer; transition: transform 0.2s;` : ``;
+    const onClickAttr = curMember.isParent ? `onclick="openEditHobbyModal('${h.id}')"` : ``;
+    
+    return `
+    <div class="list-item" style="flex-direction:column; align-items:flex-start; ${isClickable}" ${onClickAttr}>
       <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
         <div class="list-item-left">
           <span class="item-avatar">${h.avatar}</span>
@@ -877,6 +914,52 @@ function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('active');
 }
 
+// --- Edit Recurring Hobby (Fahrgemeinschaft) ---
+function openEditHobbyModal(id) {
+  const hobby = state.recurringHobbies.find(h => h.id === id);
+  if (!hobby) return;
+  
+  document.getElementById('edit-hobby-id').value = hobby.id;
+  
+  // Populate options dynamically based on family members
+  const memberOptions = state.members.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+  const allOptions = `
+    <option value="Offen (Wer fährt?)">⚠️ Offen (Wer fährt?)</option>
+    <optgroup label="Unsere Familie">
+      ${memberOptions}
+    </optgroup>
+    <optgroup label="Verknüpfte Familien">
+      ${state.connectedFamilies.map(f => `<option value="${f.name}">${f.name}</option>`).join('')}
+    </optgroup>
+  `;
+  
+  document.getElementById('edit-hobby-bring').innerHTML = allOptions;
+  document.getElementById('edit-hobby-get').innerHTML = allOptions;
+  
+  // Set existing values if possible
+  document.getElementById('edit-hobby-bring').value = hobby.bringDriver;
+  document.getElementById('edit-hobby-get').value = hobby.getDriver;
+
+  document.getElementById('modal-edit-hobby').classList.add('active');
+}
+
+async function handleUpdateHobby(event) {
+  event.preventDefault();
+  const id = document.getElementById('edit-hobby-id').value;
+  const bring = document.getElementById('edit-hobby-bring').value;
+  const get = document.getElementById('edit-hobby-get').value;
+  const newStatus = (bring.includes('Offen') || get.includes('Offen')) ? 'Fahrt offen ⚠️' : 'Fahrten geregelt ✅';
+
+  if (currentFamilyId) {
+    await supabase.from('recurring_hobbies')
+      .update({ bring_driver: bring, get_driver: get, status: newStatus })
+      .eq('id', id);
+  }
+
+  closeModal('modal-edit-hobby');
+  showToast('Fahrgemeinschaft wurde aktualisiert!');
+}
+
 // --- Hobby Creation ---
 async function handleCreateHobby(event) {
   event.preventDefault();
@@ -1047,4 +1130,70 @@ function showToast(message) {
     toast.style.transition = 'all 0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 3500);
+}
+
+// --- Authentication & Session Handlers ---
+let isRegisterMode = false;
+
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('auth-register-fields').style.display = isRegisterMode ? 'flex' : 'none';
+  document.getElementById('auth-submit-btn').textContent = isRegisterMode ? 'Registrieren & Familie gründen' : 'Einloggen';
+  document.querySelector('#auth-form p a').textContent = isRegisterMode ? 'Zum Login' : 'Registrieren';
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  const email = document.getElementById('auth-email').value;
+  const password = document.getElementById('auth-password').value;
+  const submitBtn = document.getElementById('auth-submit-btn');
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Lädt...';
+
+  try {
+    if (isRegisterMode) {
+      const name = document.getElementById('auth-name').value || 'Elternteil';
+      const familyName = document.getElementById('auth-family-name').value || 'Meine Familie';
+
+      // 1. Sign up in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+      if (authError) throw authError;
+
+      // 2. Create Family
+      const inviteCode = familyName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+      const { data: familyData, error: famError } = await supabase.from('families').insert([{ name: familyName, invite_code: inviteCode }]).select().single();
+      if (famError) throw famError;
+
+      // 3. Create User Profile linked to auth_id (Make them Admin)
+      await supabase.from('users').insert([{
+        auth_id: authData.user.id,
+        family_id: familyData.id,
+        email: email,
+        name: name,
+        role: 'parent',
+        is_parent: true,
+        is_admin: true
+      }]);
+
+      showToast('Registrierung erfolgreich!');
+    } else {
+      // Login Mode
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      showToast('Erfolgreich eingeloggt!');
+    }
+
+    // Refresh UI
+    initSupabase();
+  } catch (error) {
+    alert('Fehler: ' + error.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = isRegisterMode ? 'Registrieren & Familie gründen' : 'Einloggen';
+  }
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  window.location.reload();
 }

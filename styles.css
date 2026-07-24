@@ -64,6 +64,24 @@ body.theme-dark {
   --purple-light: #4c1d95;
 }
 
+/* Explicit Light Theme Mode */
+body.theme-light {
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-subtle: #f1f5f9;
+  
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-inverse: #ffffff;
+  
+  --border-color: #cbd5e1;
+  --primary-light: #e0e7ff;
+  --secondary-light: #d1fae5;
+  --accent-light: #fef3c7;
+  --rose-light: #ffe4e6;
+  --purple-light: #ede9fe;
+}
+
 /* System Dark Mode Fallback */
 @media (prefers-color-scheme: dark) {
   body:not(.theme-light) {

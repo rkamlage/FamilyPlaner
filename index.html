@@ -250,6 +250,10 @@
             <button class="pill" id="theme-btn-dark" onclick="setAppTheme('dark')">🌙 Dunkel</button>
             <button class="pill active" id="theme-btn-auto" onclick="setAppTheme('auto')">📱 System (Auto)</button>
           </div>
+          
+          <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+            <button class="btn btn-ghost full-width" style="color: var(--rose-light);" onclick="logout()">🚪 Ausloggen</button>
+          </div>
         </div>
 
         <!-- Own Family Management Section -->
@@ -594,6 +598,78 @@
         </div>
         <button class="btn btn-primary full-width" onclick="handleConnectFamily()">Verbindungsanfrage senden</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT RECURRING HOBBY -->
+  <div id="modal-edit-hobby" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🚗 Fahrgemeinschaft bearbeiten</h3>
+        <button class="close-btn" onclick="closeModal('modal-edit-hobby')">✕</button>
+      </div>
+      <form id="form-edit-hobby" onsubmit="handleUpdateHobby(event)" class="modal-body">
+        <input type="hidden" id="edit-hobby-id">
+        <p class="modal-desc">Trage dich für den Bring- oder Holdienst ein.</p>
+        
+        <div class="form-group">
+          <label>🚗 Hin-Fahrt (Bringdienst)</label>
+          <select id="edit-hobby-bring" class="form-input">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>🚗 Rück-Fahrt (Holdienst)</label>
+          <select id="edit-hobby-get" class="form-input">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-edit-hobby')">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Fahrten aktualisieren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION OVERLAY -->
+  <div id="auth-overlay" class="modal-overlay" style="z-index: 999; background: var(--bg-app); display: flex;">
+    <div class="modal-card" style="box-shadow: none; border-top: none; max-height: 100vh; height: 100vh; border-radius: 0; padding-top: 50px;">
+      <div style="text-align:center; margin-bottom: 20px;">
+        <div class="logo-icon" style="margin: 0 auto; margin-bottom: 15px; font-size: 40px; width: 60px; height: 60px;">👨‍👩‍👧‍👦</div>
+        <h2>FamilyPlaner</h2>
+        <p style="font-size:12px; color:var(--text-muted);">Melde dich an, um mit deiner Familie zu starten.</p>
+      </div>
+
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="form-group">
+          <label>E-Mail Adresse</label>
+          <input type="email" id="auth-email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label>Passwort</label>
+          <input type="password" id="auth-password" class="form-input" required>
+        </div>
+        
+        <div id="auth-register-fields" style="display:none; flex-direction:column; gap:12px;">
+          <div class="form-group">
+            <label>Dein Vorname</label>
+            <input type="text" id="auth-name" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Familien-Name (für neue Familie)</label>
+            <input type="text" id="auth-family-name" class="form-input" placeholder="z.B. Familie Müller">
+          </div>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary full-width" style="margin-top:10px;">Einloggen</button>
+        
+        <p style="text-align:center; font-size:12px; margin-top:10px;">
+          Noch kein Account? <a href="#" onclick="toggleAuthMode()" style="color:var(--primary); font-weight:700;">Registrieren</a>
+        </p>
+      </form>
     </div>
   </div>
 

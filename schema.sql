@@ -19,6 +19,7 @@ CREATE TABLE public.families (
 -- 2. `users`
 CREATE TABLE public.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    auth_id UUID UNIQUE, -- Links to Supabase auth.users
     family_id UUID REFERENCES public.families(id) ON DELETE CASCADE,
     email VARCHAR(255) UNIQUE,
     name VARCHAR(100) NOT NULL,
@@ -26,6 +27,7 @@ CREATE TABLE public.users (
     avatar VARCHAR(10) DEFAULT '👨',
     age INT,
     is_parent BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN DEFAULT FALSE, -- ONLY ONE ADMIN PER FAMILY
     has_own_device BOOLEAN DEFAULT FALSE,
     pin_code VARCHAR(6),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
