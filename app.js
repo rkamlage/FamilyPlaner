@@ -1229,6 +1229,12 @@ async function handleAuthSubmit(event) {
         is_admin: isAdmin
       }]);
 
+      // If email confirmation is enabled on the server, session is null here.
+      // But we added a DB trigger to auto-confirm, so we can just log in immediately!
+      if (!authData.session) {
+        await supabase.auth.signInWithPassword({ email, password });
+      }
+
       showToast('Registrierung erfolgreich!');
     } else {
       // Login Mode
