@@ -2,6 +2,9 @@
    FAMILYPLANER - INTERACTIVE LOGIC & STATE MANAGEMENT
    ========================================================================== */
 
+// APP CONFIGURATION
+const APP_VERSION = "v0.0.3";
+
 // --- Application State ---
 const defaultState = {
   activeProfile: 'parent', // 'parent' | 'child_independent' | 'child_managed'
@@ -371,9 +374,6 @@ function setAppTheme(themeMode) {
 // Restore saved theme on startup
 const savedTheme = localStorage.getItem('familyplaner_theme') || 'auto';
 setTimeout(() => setAppTheme(savedTheme), 100);
-
-// APP CONFIGURATION
-const APP_VERSION = "v0.0.2";
 
 // DOM Elements
 const tabs = document.querySelectorAll('.tab-content');
