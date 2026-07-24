@@ -224,7 +224,7 @@ window.addEventListener('error', e => addErrorLog(`ERROR: ${e.message} at ${e.fi
 window.addEventListener('unhandledrejection', e => addErrorLog(`PROMISE_REJECT: ${e.reason}`));
 
 function renderSettings() {
-  const container = document.getElementById('settings-content');
+  const container = document.getElementById('settings-debug-content');
   if (!container) return;
   
   const familyCode = state.currentFamily || 'Laden...';
@@ -290,6 +290,11 @@ function renderHeaderAndProfile() {
   if (!curMember) return;
   document.getElementById('active-avatar').textContent = curMember.avatar;
   document.getElementById('active-profile-name').textContent = curMember.name;
+  
+  // Set dynamic family names
+  if (document.getElementById('current-family-badge')) document.getElementById('current-family-badge').textContent = state.currentFamily;
+  if (document.getElementById('family-title-name')) document.getElementById('family-title-name').textContent = state.currentFamily;
+  if (document.getElementById('google-sync-family-name')) document.getElementById('google-sync-family-name').textContent = state.currentFamily;
   document.getElementById('active-profile-role').textContent = curMember.isParent ? 'Eltern-Modus' : (curMember.hasOwnDevice ? 'Eigener Account' : 'Verwaltet');
 
   // Banner text

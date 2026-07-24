@@ -41,8 +41,8 @@
         <div class="logo-icon">👨‍👩‍👧‍👦</div>
         <div class="logo-text">
           <h1>FamilyPlaner</h1>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span class="family-badge" id="current-family-badge">Familie Müller</span>
+          <div style="display:flex; flex-direction:column; align-items:flex-start;">
+            <span class="family-badge" id="current-family-badge">Laden...</span>
             <span class="live-sync-indicator" id="live-sync-indicator" title="Echtzeit-Synchronisation aktiv">🟢 Live-Sync</span>
           </div>
         </div>
@@ -207,7 +207,7 @@
           </div>
           <div class="gcal-sync-row">
             <div>
-              <strong style="font-size:13px;">Google Calendar (Familie Müller)</strong>
+              <strong style="font-size:13px;">Google Calendar (<span id="google-sync-family-name">Familie</span>)</strong>
               <p style="font-size:11px; color:var(--text-muted);">Synchronisiert Schultage, Eltern-Termine & Feiertage.</p>
             </div>
             <button class="btn btn-secondary btn-sm" onclick="triggerGoogleSync()">🔄 Jetzt syncen</button>
@@ -267,10 +267,10 @@
           </div>
         </div>
 
-        <!-- Own Family Management Section -->
-        <div class="section-card highlight-card">
+        <!-- Own Family Card -->
+        <div class="section-card" style="border-color: var(--primary);">
           <div class="card-header">
-            <h3>🏠 Familienmitglieder von <span id="family-title-name">Familie Müller</span></h3>
+            <h3>🏠 Familienmitglieder von <span id="family-title-name">...</span></h3>
             <span class="badge">Eigene Familie</span>
           </div>
           <p class="card-sub-desc">Verwalte Eltern, Kinder und deren Geräte-Zugänge.</p>
@@ -279,28 +279,32 @@
           </div>
         </div>
 
-        <!-- Kid Rights / Permissions Card -->
+        <!-- Kids Permissions Card -->
         <div class="section-card">
           <div class="card-header">
             <h3>🔑 Rechte-Verwaltung für Kinder</h3>
-            <span class="badge">Eltern-Kontrolle</span>
+            <span class="badge" style="background: var(--bg-card); color: var(--primary);">Eltern-Kontrolle</span>
           </div>
-          <p class="card-sub-desc">Bestimme, was Kinder selbstständig machen dürfen und wann Eltern zustimmen müssen.</p>
+          <p class="card-sub-desc" style="margin-bottom:0;">Bestimme, was Kinder selbstständig machen dürfen und wann Eltern zustimmen müssen.</p>
           <div id="kid-permissions-container" class="permissions-list">
             <!-- Dynamic Content via app.js -->
           </div>
         </div>
 
-        <div class="section-title-bar" style="margin-top:20px;">
-          <div>
+        <!-- Connected Families Card -->
+        <div class="section-card">
+          <div class="card-header">
             <h3>🤝 Befreundete Familien</h3>
-            <p>Vernetzte Familien für Spontan-Anfragen & Fahrgemeinschaften</p>
+            <button class="btn btn-outline btn-sm" onclick="showConnectModal()">+ Familie verknüpfen</button>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="showConnectModal()">+ Familie verknüpfen</button>
+          <p class="card-sub-desc">Vernetzte Familien für Spontan-Anfragen & Fahrgemeinschaften</p>
+          <div id="friends-family-list" class="grid-list">
+            <!-- Dynamic Content via app.js -->
+          </div>
         </div>
-        <div id="friends-family-list" class="grid-list">
-          <!-- Dynamic Content via app.js -->
-        </div>
+        
+        <!-- Debug Area -->
+        <div id="settings-debug-content"></div>
       </section>
     </main>
 
@@ -684,8 +688,8 @@
           </div>
 
           <div class="form-group" id="auth-group-family-create">
-            <label>Familien-Name</label>
-            <input type="text" id="auth-family-name" class="form-input" placeholder="z.B. Familie Müller">
+            <label>Name der Familie</label>
+            <input type="text" id="auth-family-name" class="form-input" placeholder="z.B. Familie Kamlage">
           </div>
 
           <div class="form-group" id="auth-group-family-join" style="display: none;">
@@ -738,7 +742,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -750,7 +754,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.10");
+    versionDisplays.forEach(el => el.textContent = "v0.0.11");
   </script>
 </body>
 </html>
