@@ -237,73 +237,87 @@
       </section>
 
       <!-- TAB 5: FAMILIEN-VERWALTUNG & EINSTELLUNGEN -->
+      
       <section id="tab-friends" class="tab-content">
-        <div class="section-title-bar">
+        <div class="section-title-bar" style="margin-bottom: 15px;">
           <div>
-            <h2>⚙️ Einstellungen & Familie</h2>
-            <p>Design/Theme, Standard-Einstellungen & Familienmitglieder</p>
+            <h2>⚙️ Optionen</h2>
+            <p>Konfiguriere deine Familie und die App</p>
           </div>
-          <button id="btn-add-member" class="btn btn-primary" onclick="openAddMemberModal()">+ Mitglied hinzufügen</button>
         </div>
 
-        <!-- Debug Area -->
-        <div id="settings-debug-content"></div>
+        <div class="filter-pills" style="margin-bottom: 20px;">
+          <button class="pill active" id="btn-opt-fam" onclick="switchOptionsTab('fam')">🏠 Familie</button>
+          <button class="pill" id="btn-opt-app" onclick="switchOptionsTab('app')">⚙️ App-Einstellungen</button>
+        </div>
 
-        <!-- Theme & Display Mode Card -->
-        <div class="section-card">
-          <div class="card-header">
-            <h3>🎨 Erscheinungsbild & Theme</h3>
-            <span class="badge">Kontrast / Modus</span>
-          </div>
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <button class="pill" id="theme-btn-light" onclick="setAppTheme('light')">☀️ Hell</button>
-            <button class="pill" id="theme-btn-dark" onclick="setAppTheme('dark')">🌙 Dunkel</button>
-            <button class="pill active" id="theme-btn-auto" onclick="setAppTheme('auto')">📱 System (Auto)</button>
+        <div id="options-tab-fam">
+          <div style="display:flex; justify-content:flex-end; margin-bottom: 15px;">
+            <button id="btn-add-member" class="btn btn-primary" onclick="openAddMemberModal()">+ Mitglied hinzufügen</button>
           </div>
           
-          <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.0</strong></span>
-            <button class="btn btn-ghost" style="color: var(--rose-light); padding: 6px 12px;" onclick="logout()">🚪 Ausloggen</button>
+          <div id="settings-family-code-content"></div>
+
+          <!-- Own Family Card -->
+          <div id="card-settings-own-family" class="section-card" style="border-color: var(--primary);">
+            <div class="card-header">
+              <h3>🏠 Familienmitglieder von <span id="family-title-name">...</span></h3>
+              <span class="badge">Eigene Familie</span>
+              <button class="btn btn-ghost" style="padding:4px 8px; font-size:12px; margin-left:10px;" onclick="toggleEditMembers()">✏️ Bearbeiten</button>
+            </div>
+            <p class="card-sub-desc">Verwalte Eltern, Kinder und deren Geräte-Zugänge.</p>
+            <div id="own-family-members-list" class="grid-list">
+              <!-- Dynamic Content via app.js -->
+            </div>
+          </div>
+
+          <!-- Kids Permissions Card -->
+          <div id="card-settings-kids-permissions" class="section-card">
+            <div class="card-header">
+              <h3>🔑 Rechte-Verwaltung für Kinder</h3>
+              <span class="badge" style="background: var(--bg-card); color: var(--primary);">Eltern-Kontrolle</span>
+            </div>
+            <p class="card-sub-desc" style="margin-bottom:0;">Bestimme, was Kinder selbstständig machen dürfen und wann Eltern zustimmen müssen.</p>
+            <div id="kid-permissions-container" class="permissions-list">
+              <!-- Dynamic Content via app.js -->
+            </div>
+          </div>
+
+          <!-- Connected Families Card -->
+          <div id="card-settings-connected-families" class="section-card">
+            <div class="card-header">
+              <h3>🤝 Befreundete Familien</h3>
+              <button class="btn btn-outline btn-sm" onclick="showConnectModal()">+ Familie verknüpfen</button>
+            </div>
+            <p class="card-sub-desc">Vernetzte Familien für Spontan-Anfragen & Fahrgemeinschaften</p>
+            <div id="friends-family-list" class="grid-list">
+              <!-- Dynamic Content via app.js -->
+            </div>
           </div>
         </div>
 
-        <!-- Own Family Card -->
-        <div id="card-settings-own-family" class="section-card" style="border-color: var(--primary);">
-          <div class="card-header">
-            <h3>🏠 Familienmitglieder von <span id="family-title-name">...</span></h3>
-            <span class="badge">Eigene Familie</span>
-            <button class="btn btn-ghost" style="padding:4px 8px; font-size:12px; margin-left:10px;" onclick="toggleEditMembers()">✏️ Bearbeiten</button>
-          </div>
-          <p class="card-sub-desc">Verwalte Eltern, Kinder und deren Geräte-Zugänge.</p>
-          <div id="own-family-members-list" class="grid-list">
-            <!-- Dynamic Content via app.js -->
-          </div>
-        </div>
+        <div id="options-tab-app" style="display: none;">
+          <div id="settings-debug-content"></div>
 
-        <!-- Kids Permissions Card -->
-        <div id="card-settings-kids-permissions" class="section-card">
-          <div class="card-header">
-            <h3>🔑 Rechte-Verwaltung für Kinder</h3>
-            <span class="badge" style="background: var(--bg-card); color: var(--primary);">Eltern-Kontrolle</span>
-          </div>
-          <p class="card-sub-desc" style="margin-bottom:0;">Bestimme, was Kinder selbstständig machen dürfen und wann Eltern zustimmen müssen.</p>
-          <div id="kid-permissions-container" class="permissions-list">
-            <!-- Dynamic Content via app.js -->
-          </div>
-        </div>
-
-        <!-- Connected Families Card -->
-        <div id="card-settings-connected-families" class="section-card">
-          <div class="card-header">
-            <h3>🤝 Befreundete Familien</h3>
-            <button class="btn btn-outline btn-sm" onclick="showConnectModal()">+ Familie verknüpfen</button>
-          </div>
-          <p class="card-sub-desc">Vernetzte Familien für Spontan-Anfragen & Fahrgemeinschaften</p>
-          <div id="friends-family-list" class="grid-list">
-            <!-- Dynamic Content via app.js -->
+          <!-- Theme & Display Mode Card -->
+          <div class="section-card">
+            <div class="card-header">
+              <h3>🎨 Erscheinungsbild & Theme</h3>
+              <span class="badge">Kontrast / Modus</span>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="pill" id="theme-btn-light" onclick="setAppTheme('light')">☀️ Hell</button>
+              <button class="pill" id="theme-btn-dark" onclick="setAppTheme('dark')">🌙 Dunkel</button>
+              <button class="pill active" id="theme-btn-auto" onclick="setAppTheme('auto')">📱 System (Auto)</button>
+            </div>
+            
+            <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.19</strong></span>
+            </div>
           </div>
         </div>
       </section>
+
     </main>
 
     <!-- Bottom Mobile Navigation Bar -->
@@ -435,14 +449,7 @@
         <!-- Target Audience Picker -->
         <div class="form-group">
           <label>🎯 Zielgruppe & Sichtbarkeit (Wer soll das sehen?)</label>
-          <select id="adhoc-target-audience" class="form-input">
-            <option value="Alle befreundeten Familien">🌐 Alle befreundeten Familien</option>
-            <option value="Nur Familie Weber (Jonas & Emma)">👥 Nur Familie Weber</option>
-            <option value="Nur Familie Fischer (Ben)">👥 Nur Familie Fischer</option>
-            <option value="Nur Jungs (Nick, Jonas, Ben)">👦 Nur Jungs (Nick, Jonas, Ben)</option>
-            <option value="Nur Mädchen (Maya, Emma)">👧 Nur Mädchen (Maya, Emma)</option>
-            <option value="🔒 Nur Familien-Intern (Keine Freunde)">🔒 Nur Familien-Intern (Müller)</option>
-          </select>
+          <select id="adhoc-target-audience" class="form-input"></select>
         </div>
 
         <!-- Parent Presence Selection -->
@@ -548,26 +555,12 @@
         <!-- Driver Selection -->
         <div class="form-group">
           <label>🚗 Hin-Fahrt (Bringdienst - Wer bringt?)</label>
-          <select id="hobby-bring" class="form-input">
-            <option value="Tom (Papa)">👨 Tom (Papa)</option>
-            <option value="Sarah (Mama)">👩 Sarah (Mama)</option>
-            <option value="Fam. Weber (Jonas' Eltern)">🏡 Fam. Weber (Jonas' Eltern)</option>
-            <option value="Fam. Fischer (Bens Eltern)">🏡 Fam. Fischer (Bens Eltern)</option>
-            <option value="Mutter von Emma">👩 Mutter von Emma</option>
-            <option value="Offen (Wer bringt?)">⚠️ Offen (Wer bringt?)</option>
-          </select>
+          <select id="hobby-bring" class="form-input"></select>
         </div>
 
         <div class="form-group">
           <label>🚗 Rück-Fahrt (Holdienst - Wer holt ab?)</label>
-          <select id="hobby-get" class="form-input">
-            <option value="Sarah (Mama)">👩 Sarah (Mama)</option>
-            <option value="Tom (Papa)">👨 Tom (Papa)</option>
-            <option value="Fam. Weber (Jonas' Eltern)">🏡 Fam. Weber (Jonas' Eltern)</option>
-            <option value="Mutter von Emma">👩 Mutter von Emma</option>
-            <option value="Fam. Fischer (Bens Eltern)">🏡 Fam. Fischer (Bens Eltern)</option>
-            <option value="Offen (Wer holt?)">⚠️ Offen (Wer holt?)</option>
-          </select>
+          <select id="hobby-get" class="form-input"></select>
         </div>
 
         <!-- Parent Presence Selection -->
@@ -740,7 +733,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -752,7 +745,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.18");
+    versionDisplays.forEach(el => el.textContent = "v0.0.19");
   </script>
 </body>
 </html>

@@ -1,3 +1,63 @@
+
+function generateAdhocCard(req, curMember) {
+  const isChildRequest = !state.members.find(m => m.name === req.creator && m.isParent);
+  const showParentWarning = curMember.isParent && isChildRequest;
+  
+  const isOwnFamily = state.members.some(m => m.name === req.creator);
+  
+  let actionButtons = '';
+  if (isOwnFamily) {
+    if (curMember.isParent || curMember.name === req.creator) {
+      actionButtons = `<button class="btn btn-ghost full-width" style="color:var(--danger); border: 1px solid var(--danger);" onclick="deleteAdHoc('${req.id}')">🗑️ Anfrage löschen</button>`;
+    }
+  } else {
+    actionButtons = `
+      <button class="btn btn-primary" style="flex:1;" onclick="respondAdHoc('${req.id}', 'Zusage')">✅ Zusagen</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="respondAdHoc('${req.id}', 'Absage')">❌ Absagen</button>
+    `;
+  }
+
+  return `
+    <div class="section-card">
+      <div class="card-header" style="margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:24px;">${req.avatar}</span>
+          <div>
+            <h3 style="font-size:15px; display:flex; align-items:center; gap:4px;">
+              ⚡ ${req.activity}
+              ${showParentWarning ? '<span title="Ohne Eltern-Freigabe gesendet">⚠️</span>' : ''}
+            </h3>
+            <span style="font-size:12px; color:var(--text-muted);">Erstellt von ${req.creator}</span>
+          </div>
+        </div>
+        <span class="badge" style="background:var(--rose-light); color:var(--danger);">⚡ Spontan</span>
+      </div>
+
+      <div style="background:var(--bg-app); border-radius:var(--radius-md); padding:12px; margin-bottom:15px; font-size:13px; display:flex; flex-direction:column; gap:6px;">
+        <div>🎯 <strong>Empfänger / Zielgruppe:</strong> <span class="badge" style="background:var(--primary-light); color:var(--primary); font-size:11px;">${req.targetAudience}</span></div>
+        <div>⏰ <strong>Zeit:</strong> ${req.time}</div>
+        <div>📍 <strong>Ort:</strong> ${req.location}</div>
+        <div>👪 <strong>Begleitung:</strong> <span class="parent-presence-pill ${req.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${req.parentPresent}</span></div>
+        ${req.cost ? `<div>💰 <strong>Kosten:</strong> <span class="cost-badge">${req.cost}</span></div>` : ''}
+      </div>
+
+      <h4 style="font-size:12px; margin-bottom:6px;">Rückmeldungen:</h4>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+        ${req.rsvps.length === 0 ? '<span style="font-size:12px; color:var(--text-muted);">Noch keine Rückmeldungen.</span>' : req.rsvps.map(r => `
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; background:white; padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+            <span>${r.avatar} <strong>${r.name}</strong> (${r.family})</span>
+            <span class="item-status-pill ${r.status.includes('Zusage') ? 'accepted' : 'pending'}">${r.status}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        ${actionButtons}
+      </div>
+    </div>
+  `;
+}
+
 /* ==========================================================================
    FAMILYPLANER - INTERACTIVE LOGIC & STATE MANAGEMENT
    ========================================================================== */
@@ -262,20 +322,26 @@ function renderSettings() {
   
   const familyCode = state.currentFamily || 'Laden...';
   
+  
+  const familyCodeContainer = document.getElementById('settings-family-code-content');
+  if (familyCodeContainer) {
+    familyCodeContainer.innerHTML = `
+      <div class="card" style="margin-bottom: 15px;">
+        <h3>Familien-Verwaltung</h3>
+        <p style="font-size:12px; margin-bottom:10px;">Dein aktueller Einladungscode für andere Familienmitglieder:</p>
+        <div style="background:var(--bg-app); padding:10px; border-radius:8px; text-align:center; font-family:monospace; font-size:18px; font-weight:bold; letter-spacing:2px; margin-bottom:15px;">
+          ${familyCode}
+        </div>
+        <button class="btn btn-ghost full-width" onclick="navigator.clipboard.writeText('${familyCode}'); showToast('Code kopiert!')">Code kopieren</button>
+      </div>
+    `;
+  }
+
   container.innerHTML = `
     <div class="card">
       <h3>Benutzerkonto</h3>
       <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Du bist eingeloggt als Elternteil.</p>
       <button class="btn btn-outline full-width" onclick="logout()">Abmelden</button>
-    </div>
-
-    <div class="card" style="margin-top: 15px;">
-      <h3>Familien-Verwaltung</h3>
-      <p style="font-size:12px; margin-bottom:10px;">Dein aktueller Einladungscode für andere Familienmitglieder:</p>
-      <div style="background:var(--bg-app); padding:10px; border-radius:8px; text-align:center; font-family:monospace; font-size:18px; font-weight:bold; letter-spacing:2px; margin-bottom:15px;">
-        ${state.familyInviteCode || 'Code fehlt'}
-      </div>
-      <button class="btn btn-ghost full-width" onclick="navigator.clipboard.writeText('${state.familyInviteCode}'); alert('Code kopiert!')">Code kopieren</button>
     </div>
     
     <div class="card" style="margin-top: 15px;">
@@ -284,6 +350,7 @@ function renderSettings() {
       <button class="btn btn-outline full-width" onclick="copyErrorLog()">Fehlerprotokoll kopieren</button>
     </div>
   `;
+
 }
 
 function copyErrorLog() {
@@ -396,6 +463,29 @@ function populateDropdowns() {
   
   if (wishChild) wishChild.innerHTML = optionsHtml;
   if (hobbyChild) hobbyChild.innerHTML = optionsHtml;
+
+  // Driver dropdowns
+  const parents = state.members.filter(m => m.isParent);
+  const driverOptions = parents.map(m => `<option value="${m.name}">${m.avatar} ${m.name}</option>`).join('') 
+    + state.connectedFamilies.map(f => `<option value="${f.name}">${f.avatar} ${f.name}</option>`).join('')
+    + `<option value="Offen (Wer bringt?)">⚠️ Offen</option>`;
+
+  const bringEl = document.getElementById('hobby-bring');
+  const getEl = document.getElementById('hobby-get');
+  const eBringEl = document.getElementById('edit-hobby-bring');
+  const eGetEl = document.getElementById('edit-hobby-get');
+
+  if (bringEl) bringEl.innerHTML = driverOptions;
+  if (getEl) getEl.innerHTML = driverOptions.replace('Offen (Wer bringt?)', 'Offen (Wer holt?)');
+  if (eBringEl) eBringEl.innerHTML = driverOptions;
+  if (eGetEl) eGetEl.innerHTML = driverOptions.replace('Offen (Wer bringt?)', 'Offen (Wer holt?)');
+
+  // Adhoc targets
+  const adhocTarget = document.getElementById('adhoc-target-audience');
+  if (adhocTarget) {
+    adhocTarget.innerHTML = `<option value="Alle befreundeten Familien">🤝 Alle befreundeten Familien</option>`
+      + state.connectedFamilies.map(f => `<option value="${f.name}">${f.avatar} ${f.name}</option>`).join('');
+  }
 }
 
 // Render Own Family Members List (Tab 5)
@@ -536,46 +626,7 @@ function renderDashboard() {
   document.getElementById('adhoc-count-badge').textContent = `${state.adHocRequests.length} Aktiv`;
   document.getElementById('nav-adhoc-badge').textContent = state.adHocRequests.length;
 
-  adhocContainer.innerHTML = state.adHocRequests.map(req => {
-    // Show a small warning to parents if the creator is a child
-    const isChildRequest = !state.members.find(m => m.name === req.creator && m.isParent);
-    const showParentWarning = curMember.isParent && isChildRequest;
-
-    return `
-    <div class="list-item" style="${showParentWarning ? 'border-left: 3px solid var(--rose);' : ''}">
-      <div class="list-item-left">
-        <span class="item-avatar">${req.avatar}</span>
-        <div>
-          <div class="item-title">${req.activity} ${showParentWarning ? '<span style="color:var(--rose); font-size:11px;">(Kind-Anfrage)</span>' : ''}</div>
-          <div class="item-sub">📍 ${req.location} • ⏰ ${req.time}</div>
-          <div style="display:flex; gap:4px; margin-top:3px; flex-wrap:wrap;">
-            ${req.targetAudience ? `<span class="target-audience-pill">🎯 ${req.targetAudience}</span>` : ''}
-            ${req.cost ? `<span class="cost-badge">💶 ${req.cost}</span>` : ''}
-          </div>
-        </div>
-      </div>
-      <div class="rsvp-buttons">
-        <button class="btn-rsvp yes" onclick="respondAdHoc('${req.id}', 'Dabei!')">Dabei! 👍</button>
-      </div>
-    </div>
-  `;}).join('');
-
-  // Today's Events
-  const todayContainer = document.getElementById('dashboard-today-list');
-  todayContainer.innerHTML = state.calendarEvents.map(evt => `
-    <div class="list-item">
-      <div class="list-item-left">
-        <span class="item-avatar">${evt.source === 'Google' ? '🗓️' : '📅'}</span>
-        <div>
-          <div class="item-title">${evt.title}</div>
-          <div class="item-sub">👤 ${evt.forMember} • ⏰ ${evt.time}</div>
-          ${evt.cost ? `<div class="item-sub"><span class="cost-badge">💶 ${evt.cost}</span></div>` : ''}
-          <div class="item-sub" style="color: var(--primary); font-weight:600;">🚗 Fahrgemeinschaft: ${evt.carpool}</div>
-        </div>
-      </div>
-      <span class="item-status-pill accepted">${evt.status}</span>
-    </div>
-  `).join('');
+  adhocContainer.innerHTML = state.adHocRequests.map(req => generateAdhocCard(req, curMember)).join('');
 }
 
 // Render Ad-Hoc Section (With Target Audience & Parent Cancel Veto)
@@ -1370,5 +1421,20 @@ async function assignDriver(hobbyId, direction) {
     await db.from('recurring_hobbies').update(update).eq('id', hobbyId);
     renderApp();
     showToast(`✅ Du bist als Fahrer eingetragen!`);
+  }
+}
+
+window.switchOptionsTab = function(tabName) {
+  document.getElementById('options-tab-fam').style.display = tabName === 'fam' ? 'block' : 'none';
+  document.getElementById('options-tab-app').style.display = tabName === 'app' ? 'block' : 'none';
+  document.getElementById('btn-opt-fam').classList.toggle('active', tabName === 'fam');
+  document.getElementById('btn-opt-app').classList.toggle('active', tabName === 'app');
+};
+
+async function deleteAdHoc(reqId) {
+  if (confirm("Möchtest du diese Spontan-Anfrage wirklich löschen?")) {
+    await db.from('ad_hoc_requests').delete().eq('id', reqId);
+    renderApp();
+    showToast("Anfrage gelöscht.");
   }
 }

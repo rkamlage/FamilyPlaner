@@ -1,0 +1,1 @@
+const fs = require(" fs\); let appJs = fs.readFileSync(\app.js\, \utf8\); appJs = appJs.replace(/status: \\\\$\\{answerText\\} ??\\,/, \status: answerText === \\\Zusage\\\ ? Zusage ? : Absage ?,\); fs.writeFileSync(\app.js\, appJs);
