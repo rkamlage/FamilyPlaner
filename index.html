@@ -113,7 +113,7 @@
             <span class="action-label">Wunsch</span>
             <span class="action-sub">Kino, Zoo...</span>
           </button>
-          <button class="action-card" style="background: var(--warning); color: #fff;" onclick="openNewAppointmentModal()">
+          <button class="action-card" style="background: var(--accent); color: #fff;" onclick="openNewAppointmentModal()">
             <span class="action-icon">📅</span>
             <span class="action-label">Termin</span>
             <span class="action-sub">Eintragen</span>
@@ -256,6 +256,22 @@
         </div>
       </section>
 
+      
+      <!-- TAB: APPOINTMENTS -->
+      <section id="tab-appointments" class="tab-content" style="display:none;">
+        <div class="header">
+          <div class="header-content">
+            <h1>📅 Termine</h1>
+            <p>Familienkalender & Planung</p>
+          </div>
+          <button class="btn btn-primary" onclick="openNewAppointmentModal()">+ Neuer Termin</button>
+        </div>
+
+        <div id="tab-appointments-list" style="padding: 0 20px 100px 20px;">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
       <!-- TAB 5: FAMILIEN-VERWALTUNG & EINSTELLUNGEN -->
       
       <section id="tab-friends" class="tab-content">
@@ -332,7 +348,7 @@
             </div>
             
             <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.23</strong></span>
+              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.24</strong></span>
             </div>
           </div>
         </div>
@@ -785,7 +801,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=23"></script>
+  <script src="app.js?v=24"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -797,7 +813,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.23");
+    versionDisplays.forEach(el => el.textContent = "v0.0.24");
   </script>
 
     <!-- New Appointment Modal -->
