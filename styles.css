@@ -431,6 +431,27 @@ body {
   border-radius: var(--radius-full);
 }
 
+/* Parent Presence Pills */
+.parent-presence-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.parent-presence-pill.with-parent {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.parent-presence-pill.without-parent {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }

@@ -57,6 +57,7 @@ const state = {
       time: 'Heute 15:00 Uhr',
       location: 'Bolzplatz Parkstraße',
       cost: 'Kostenlos',
+      parentPresent: 'Ohne Eltern (Kinder unter sich)',
       status: 'Aktiv',
       rsvps: [
         { family: 'Familie Weber', name: 'Jonas', status: 'Dabei! 🎉', avatar: '👦' },
@@ -71,6 +72,7 @@ const state = {
       time: 'Heute 16:30 Uhr',
       location: 'Eiscafé Venezia',
       cost: 'ca. 4 € / Kind',
+      parentPresent: 'Mit Eltern-Begleitung',
       status: 'Aktiv',
       rsvps: [
         { family: 'Familie Weber', name: 'Emma', status: 'Ab 17 Uhr dabei!', avatar: '👧' }
@@ -78,7 +80,7 @@ const state = {
     }
   ],
 
-  // Recurring Weekly Hobbies & Driver Logistics
+  // Recurring Weekly Hobbies & Internal/External Driver Logistics
   recurringHobbies: [
     {
       id: 'hob-1',
@@ -87,20 +89,22 @@ const state = {
       title: '⚽ Fußball-Training',
       schedule: 'Jeden Di & Do, 17:00 - 18:30 Uhr',
       location: 'Sportpark Ost',
-      bringDriver: 'Fam. Müller (Wir)',
-      getDriver: 'Fam. Weber',
-      status: 'Fahrten aufgeteilt ✅'
+      bringDriver: '👨 Tom (Papa)',
+      getDriver: '👩 Sarah (Mama)',
+      parentPresent: 'Ohne Eltern (Trainer schaut)',
+      status: 'Familien-intern aufgeteilt ✅'
     },
     {
       id: 'hob-2',
       child: 'Maya',
       avatar: '👧',
-      title: '🎻 Geigenunterricht',
-      schedule: 'Jeden Mittwoch, 15:30 - 16:15 Uhr',
-      location: 'Musikschule Stadtmitte',
-      bringDriver: 'Fam. Müller (Wir)',
-      getDriver: 'Fam. Müller (Wir)',
-      status: 'Fahrten geregelt ✅'
+      title: '💃 Tanzen & Ballett',
+      schedule: 'Jeden Donnerstag, 15:30 - 16:30 Uhr',
+      location: 'Tanzstudio Motion',
+      bringDriver: '👨 Tom (Papa)',
+      getDriver: '👩 Mutter von Emma (Fam. Weber)',
+      parentPresent: 'Mit Eltern-Begleitung',
+      status: 'Gemischter Hol/Bringdienst ✅'
     },
     {
       id: 'hob-3',
@@ -109,8 +113,9 @@ const state = {
       title: '🏊 Schwimmverein (Kinderschwimmen)',
       schedule: 'Jeden Freitag, 16:00 - 17:30 Uhr',
       location: 'Stadtbad Aqua',
-      bringDriver: 'Fam. Fischer',
-      getDriver: 'Offen (Wer holt ab?) ⚠️',
+      bringDriver: '🏡 Fam. Fischer',
+      getDriver: '⚠️ Offen (Wer holt ab?)',
+      parentPresent: 'Mit Eltern-Begleitung',
       status: 'Holdienst offen'
     }
   ],
@@ -160,7 +165,7 @@ const state = {
     }
   ],
 
-  // Calendar Events & Carpooling & Optional Costs (Google Synced & Local)
+  // Calendar Events & Carpooling & Optional Costs
   calendarEvents: [
     {
       id: 'evt-1',
@@ -169,7 +174,8 @@ const state = {
       time: 'Samstag, 10:00 - 12:00 Uhr',
       location: 'Sportpark Ost',
       cost: 'Kostenlos',
-      carpool: '🚗 Hin: Fam. Müller / 🚗 Rück: Fam. Weber',
+      parentPresent: 'Mit Eltern-Begleitung (Tom & Sarah)',
+      carpool: '🚗 Hin: Tom (Papa) / 🚗 Rück: Fam. Weber',
       source: 'Local',
       status: 'Bestätigt'
     },
@@ -180,6 +186,7 @@ const state = {
       time: 'Freitag, 14:00 - 17:00 Uhr',
       location: 'Grundschule Goethestraße',
       cost: 'Kostenlos',
+      parentPresent: 'Mit Eltern-Begleitung',
       carpool: '🚗 Keine Fahrt nötig',
       source: 'Google',
       status: 'Google Sync 🔄'
@@ -191,7 +198,8 @@ const state = {
       time: 'Sonntag, 14:30 - 18:00 Uhr',
       location: 'Familie Weber Zuhause',
       cost: 'Geschenk ~15 €',
-      carpool: '🚗 Bringt & holt Fam. Müller',
+      parentPresent: 'Ohne Eltern',
+      carpool: '🚗 Hin: Tom (Papa) / 🚗 Rück: Sarah (Mama)',
       source: 'Local',
       status: 'Bestätigt'
     }
@@ -252,7 +260,7 @@ function renderHeaderAndProfile() {
   if (state.activeProfile === 'parent') {
     banner.className = 'mode-banner';
     bannerTitle.textContent = '🛡️ Eltern-Supervision aktiv';
-    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Wunsch-Freigaben, Spontan-Veto & Google Sync.';
+    bannerSub.textContent = 'Du siehst alle Familienaktivitäten, Wunsch-Freigaben, Spontan-Veto & Hol-/Bringdienste.';
   } else if (state.activeProfile === 'child_independent') {
     banner.className = 'mode-banner child-mode';
     bannerTitle.textContent = '👦 Nicks Kind-Modus (Eigenes Handy)';
@@ -302,7 +310,7 @@ function renderDashboard() {
     approvalWidget.style.display = 'none';
   }
 
-  // Dashboard Carpool Driver Logistics Widget
+  // Dashboard Carpool Driver Logistics Widget (Internal & External)
   const carpoolContainer = document.getElementById('dashboard-carpool-list');
   carpoolContainer.innerHTML = state.recurringHobbies.map(h => `
     <div class="list-item">
@@ -330,7 +338,10 @@ function renderDashboard() {
         <div>
           <div class="item-title">${req.activity}</div>
           <div class="item-sub">📍 ${req.location} • ⏰ ${req.time}</div>
-          ${req.cost ? `<span class="cost-badge">💶 ${req.cost}</span>` : ''}
+          <div style="display:flex; gap:4px; margin-top:3px;">
+            ${req.cost ? `<span class="cost-badge">💶 ${req.cost}</span>` : ''}
+            <span class="parent-presence-pill ${req.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${req.parentPresent}</span>
+          </div>
         </div>
       </div>
       <div class="rsvp-buttons">
@@ -357,7 +368,7 @@ function renderDashboard() {
   `).join('');
 }
 
-// Render Ad-Hoc Section (With Parent Cancel Veto Option)
+// Render Ad-Hoc Section (With Parent Cancel Veto & Parent Presence)
 function renderAdHocList() {
   const container = document.getElementById('adhoc-full-list');
   container.innerHTML = state.adHocRequests.map(req => `
@@ -376,6 +387,7 @@ function renderAdHocList() {
       <div style="font-size:12px; margin: 10px 0; display:flex; flex-direction:column; gap:4px; background:var(--bg-subtle); padding:10px; border-radius:var(--radius-md);">
         <div>⏰ <strong>Zeit:</strong> ${req.time}</div>
         <div>📍 <strong>Ort:</strong> ${req.location}</div>
+        <div>👨‍👩‍👧 <strong>Begleitung:</strong> <span class="parent-presence-pill ${req.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${req.parentPresent}</span></div>
         ${req.cost ? `<div>💶 <strong>Kosten:</strong> <span class="cost-badge">${req.cost}</span></div>` : ''}
       </div>
 
@@ -412,7 +424,7 @@ function cancelAdHocByParent(reqId) {
   }
 }
 
-// Render Recurring Hobbies & Driver Logistics
+// Render Recurring Hobbies & Internal/External Driver Logistics
 function renderRecurringHobbies() {
   const container = document.getElementById('recurring-hobbies-list');
   container.innerHTML = state.recurringHobbies.map(h => `
@@ -430,9 +442,12 @@ function renderRecurringHobbies() {
 
       <div style="width:100%; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border-color); font-size:12px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <span style="color:var(--text-muted)">Hol- & Bringdienst:</span>
+          <span style="color:var(--text-muted)">Hol- & Bringdienst (Intern / Extern):</span>
           <div style="font-weight:700; color:var(--text-main); margin-top:2px;">
             🚗 Hin: ${h.bringDriver} | 🚗 Rück: ${h.getDriver}
+          </div>
+          <div style="margin-top:2px;">
+            <span class="parent-presence-pill ${h.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${h.parentPresent}</span>
           </div>
         </div>
         ${state.activeProfile === 'parent' ? `
@@ -545,6 +560,7 @@ function renderCalendarEvents() {
         <div>👤 <strong>Für:</strong> ${evt.forMember}</div>
         <div>⏰ <strong>Zeit:</strong> ${evt.time}</div>
         <div>📍 <strong>Ort:</strong> ${evt.location}</div>
+        ${evt.parentPresent ? `<div>👨‍👩‍👧 <strong>Begleitung:</strong> <span class="parent-presence-pill ${evt.parentPresent.includes('Mit') ? 'with-parent' : 'without-parent'}">${evt.parentPresent}</span></div>` : ''}
         ${evt.cost ? `<div>💶 <strong>Kosten:</strong> <span class="cost-badge">${evt.cost}</span></div>` : ''}
       </div>
       <div style="background:var(--primary-light); color:var(--primary); font-size:12px; font-weight:700; padding:8px 12px; border-radius:var(--radius-md);">
@@ -698,6 +714,7 @@ function handleCreateHobby(event) {
   const location = document.getElementById('hobby-location').value;
   const bring = document.getElementById('hobby-bring').value;
   const get = document.getElementById('hobby-get').value;
+  const parentPresent = document.getElementById('hobby-parent-present').value;
 
   const newHobby = {
     id: `hob-${Date.now()}`,
@@ -708,6 +725,7 @@ function handleCreateHobby(event) {
     location: location,
     bringDriver: bring,
     getDriver: get,
+    parentPresent: parentPresent,
     status: (bring.includes('Offen') || get.includes('Offen')) ? 'Fahrt offen ⚠️' : 'Fahrten geregelt ✅'
   };
 
@@ -725,6 +743,7 @@ function handleCreateAdHoc(event) {
   const time = document.getElementById('adhoc-time').value;
   const location = document.getElementById('adhoc-location').value;
   const cost = document.getElementById('adhoc-cost').value;
+  const parentPresent = document.getElementById('adhoc-parent-present').value;
 
   const newReq = {
     id: `adhoc-${Date.now()}`,
@@ -734,6 +753,7 @@ function handleCreateAdHoc(event) {
     time: time,
     location: location,
     cost: cost || null,
+    parentPresent: parentPresent,
     status: 'Aktiv',
     rsvps: [
       { family: 'Familie Weber', name: 'Jonas', status: 'Angefragt 📩', avatar: '👦' }
@@ -801,7 +821,8 @@ function createMatchEvent(matchId) {
       time: 'Samstag Nachmittag',
       location: 'Wasserwelt Stadt',
       cost: '12 € / Person',
-      carpool: '🚗 Fam. Müller fährt hin / Fam. Weber holt ab',
+      parentPresent: 'Mit Eltern-Begleitung (Tom)',
+      carpool: '🚗 Hin: Tom (Papa) / 🚗 Rück: Fam. Weber',
       source: 'Local',
       status: 'Bestätigt'
     });

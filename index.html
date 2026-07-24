@@ -47,7 +47,7 @@
           <div class="banner-icon">🛡️</div>
           <div class="banner-text">
             <strong id="mode-banner-title">Eltern-Supervision aktiv</strong>
-            <p id="mode-banner-sub">Du siehst alle Familienaktivitäten, Anfragen, Wunsch-Freigaben & Kalender-Sync.</p>
+            <p id="mode-banner-sub">Du siehst alle Familienaktivitäten, Wunsch-Freigaben, Spontan-Veto & Kalender-Sync.</p>
           </div>
         </div>
 
@@ -99,10 +99,10 @@
           </div>
         </div>
 
-        <!-- Today's Hol-/Bringdienste (Carpool Logistics Widget) -->
+        <!-- Today's Hol-/Bringdienste (Carpool & Family Logistics Widget) -->
         <div class="section-card highlight-card">
           <div class="card-header">
-            <h3>🚗 Hol- & Bringdienste Heute</h3>
+            <h3>🚗 Hol- & Bringdienste (Intern & Extern)</h3>
             <span class="badge green">Fahrgemeinschaften</span>
           </div>
           <div id="dashboard-carpool-list" class="card-list">
@@ -127,7 +127,7 @@
         <div class="section-title-bar">
           <div>
             <h2>⚡ Spontane Verabredungen</h2>
-            <p>Wer hat heute spontan Zeit? (Eltern können Anfragen stornieren)</p>
+            <p>Wer hat heute spontan Zeit? (Mit Eltern-Begleitungs-Status)</p>
           </div>
           <button class="btn btn-primary" onclick="openAdHocModal()">+ Neue Anfrage</button>
         </div>
@@ -172,7 +172,7 @@
         <div class="section-title-bar">
           <div>
             <h2>📅 Hobbys & Kalender-Sync</h2>
-            <p>Google Kalender, wöchentliche Hobbys & Hol-/Bringdienst</p>
+            <p>Google Kalender, wöchentliche Hobbys & Familien-Fahrtdienste</p>
           </div>
         </div>
 
@@ -357,6 +357,15 @@
           </div>
         </div>
 
+        <!-- Parent Presence Selection -->
+        <div class="form-group">
+          <label>👨‍👩‍👧‍👦 Begleitung durch Eltern?</label>
+          <select id="adhoc-parent-present" class="form-input">
+            <option value="Mit Eltern-Begleitung">👨‍👩‍👧 Mit Eltern-Begleitung (Erwachsener dabei)</option>
+            <option value="Ohne Eltern (Kinder unter sich)">👦 Ohne Eltern (Kinder unter sich)</option>
+          </select>
+        </div>
+
         <!-- Optional Cost Field -->
         <div class="form-group">
           <label>💶 Geschätzte Kosten (Optional)</label>
@@ -426,7 +435,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NEW RECURRING HOBBY -->
+  <!-- MODAL: NEW RECURRING HOBBY (Internal & External Driver Logistics) -->
   <div id="modal-hobby" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
@@ -444,7 +453,7 @@
 
         <div class="form-group">
           <label>Hobby / Aktivität</label>
-          <input type="text" id="hobby-title" class="form-input" placeholder="z.B. Fußball-Training, Geigenunterricht, Turnen..." required>
+          <input type="text" id="hobby-title" class="form-input" placeholder="z.B. Fußball-Training, Tanzen, Geige..." required>
         </div>
 
         <div class="form-group grid-2">
@@ -454,29 +463,42 @@
           </div>
           <div>
             <label>Ort</label>
-            <input type="text" id="hobby-location" class="form-input" placeholder="z.B. Sporthalle Süd" required>
+            <input type="text" id="hobby-location" class="form-input" placeholder="z.B. Tanzstudio, Sporthalle..." required>
           </div>
         </div>
 
-        <div class="form-group grid-2">
-          <div>
-            <label>🚗 Hin-Fahrt (Bringdienst)</label>
-            <select id="hobby-bring" class="form-input">
-              <option value="Fam. Müller (Wir)">Fam. Müller (Wir)</option>
-              <option value="Fam. Weber">Fam. Weber</option>
-              <option value="Fam. Fischer">Fam. Fischer</option>
-              <option value="Offen (Wer bringt?)">Offen (Wer bringt?)</option>
-            </select>
-          </div>
-          <div>
-            <label>🚗 Rück-Fahrt (Holdienst)</label>
-            <select id="hobby-get" class="form-input">
-              <option value="Fam. Weber">Fam. Weber</option>
-              <option value="Fam. Müller (Wir)">Fam. Müller (Wir)</option>
-              <option value="Fam. Fischer">Fam. Fischer</option>
-              <option value="Offen (Wer holt?)">Offen (Wer holt?)</option>
-            </select>
-          </div>
+        <!-- Internal & External Driver Selection -->
+        <div class="form-group">
+          <label>🚗 Hin-Fahrt (Bringdienst - Wer bringt?)</label>
+          <select id="hobby-bring" class="form-input">
+            <option value="Tom (Papa)">👨 Tom (Papa)</option>
+            <option value="Sarah (Mama)">👩 Sarah (Mama)</option>
+            <option value="Fam. Weber (Jonas' Eltern)">🏡 Fam. Weber (Jonas' Eltern)</option>
+            <option value="Fam. Fischer (Bens Eltern)">🏡 Fam. Fischer (Bens Eltern)</option>
+            <option value="Mutter von Emma">👩 Mutter von Emma</option>
+            <option value="Offen (Wer bringt?)">⚠️ Offen (Wer bringt?)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>🚗 Rück-Fahrt (Holdienst - Wer holt ab?)</label>
+          <select id="hobby-get" class="form-input">
+            <option value="Sarah (Mama)">👩 Sarah (Mama)</option>
+            <option value="Tom (Papa)">👨 Tom (Papa)</option>
+            <option value="Fam. Weber (Jonas' Eltern)">🏡 Fam. Weber (Jonas' Eltern)</option>
+            <option value="Mutter von Emma">👩 Mutter von Emma</option>
+            <option value="Fam. Fischer (Bens Eltern)">🏡 Fam. Fischer (Bens Eltern)</option>
+            <option value="Offen (Wer holt?)">⚠️ Offen (Wer holt?)</option>
+          </select>
+        </div>
+
+        <!-- Parent Presence Selection -->
+        <div class="form-group">
+          <label>👨‍👩‍👧‍👦 Begleitung durch Eltern beim Hobby?</label>
+          <select id="hobby-parent-present" class="form-input">
+            <option value="Ohne Eltern (Trainer / Lehrer schaut)">👦 Ohne Eltern (Trainer / Lehrer dabei)</option>
+            <option value="Mit Eltern-Begleitung">👨‍👩‍👧 Mit Eltern-Begleitung (Zuschauen)</option>
+          </select>
         </div>
 
         <div class="modal-footer">
