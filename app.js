@@ -383,7 +383,6 @@ function renderApp() {
   renderDashboard();
   renderAdHocList();
   renderWishesList();
-  renderRecurringHobbies();
   renderCalendarEvents();
   renderAppointmentsTab();
   renderOwnFamilyMembers();
@@ -915,9 +914,16 @@ function renderCalendarEvents() {
   const curMember = state.members.find(m => m.id === state.activeProfile) || state.members[0];
   if (!curMember) return;
   const container = document.getElementById('calendar-event-list');
+  const personFilterEl = document.getElementById('home-person-filter');
+  const personFilter = personFilterEl ? personFilterEl.value : 'all';
+  
   const filtered = state.calendarEvents.filter(e => {
-    if (calendarFilter === 'all') return true;
-    return e.forMember.includes(calendarFilter);
+    if (personFilter !== 'all') {
+      if (!e.forMember.includes(personFilter)) {
+         return false;
+      }
+    }
+    return true;
   });
 
   container.innerHTML = filtered.map(evt => `

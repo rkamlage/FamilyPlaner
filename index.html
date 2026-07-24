@@ -171,6 +171,17 @@
             <!-- Dynamic Content via app.js -->
           </div>
         </div>
+
+        <br><br>
+        <!-- Calendar Filter Tabs -->
+        <h3 style="margin-bottom:10px;">Gesamter Familien-Terminplan</h3>
+        <div class="filter-pills" id="calendar-filters-container">
+            <!-- Dynamic Filters -->
+          </div>
+
+        <div id="calendar-event-list" class="timeline-list">
+          <!-- Dynamic Content via app.js -->
+        </div>
       </section>
 
       <!-- TAB 2: SPONTAN (AD-HOC) -->
@@ -186,6 +197,8 @@
         <div id="adhoc-full-list" class="grid-list">
           <!-- Dynamic Content via app.js -->
         </div>
+
+        
       </section>
 
       <!-- TAB 3: WÜNSCHE & MATCHES -->
@@ -218,13 +231,17 @@
         </div>
       </section>
 
-      <!-- TAB 4: HOBBYS, KALENDER & GOOGLE SYNC -->
-      <section id="tab-calendar" class="tab-content">
+      
+
+      
+      <!-- TAB: APPOINTMENTS -->
+      <section id="tab-appointments" class="tab-content">
         <div class="section-title-bar">
           <div>
-            <h2>📅 Hobbys & Kalender-Sync</h2>
-            <p>Google Kalender, wöchentliche Hobbys & Familien-Fahrtdienste</p>
+            <h2>📅 Termine</h2>
+            <p>Familienkalender & Planung</p>
           </div>
+          <button class="btn btn-primary" onclick="openNewAppointmentModal()">+ Neuer Termin</button>
         </div>
 
         <!-- Google Calendar Integration Box -->
@@ -240,39 +257,6 @@
             </div>
             <button class="btn btn-secondary btn-sm" onclick="triggerGoogleSync()">🔄 Jetzt syncen</button>
           </div>
-        </div>
-
-        <!-- Recurring Hobbies & Driver Logistics Section -->
-        <div class="section-card">
-          <div class="card-header">
-            <h3>🏆 Wöchentliche Hobbys & Hol-/Bringdienste</h3>
-            <button class="btn btn-sm btn-primary" onclick="openHobbyModal()">+ Hobby anlegen</button>
-          </div>
-          <div id="recurring-hobbies-list" class="grid-list">
-            <!-- Dynamic Content via app.js -->
-          </div>
-        </div>
-
-        <!-- Calendar Filter Tabs -->
-        <h3 style="margin-bottom:10px;">Gesamter Familien-Terminplan</h3>
-        <div class="filter-pills" id="calendar-filters-container">
-            <!-- Dynamic Filters -->
-          </div>
-
-        <div id="calendar-event-list" class="timeline-list">
-          <!-- Dynamic Content via app.js -->
-        </div>
-      </section>
-
-      
-      <!-- TAB: APPOINTMENTS -->
-      <section id="tab-appointments" class="tab-content">
-        <div class="section-title-bar">
-          <div>
-            <h2>📅 Termine</h2>
-            <p>Familienkalender & Planung</p>
-          </div>
-          <button class="btn btn-primary" onclick="openNewAppointmentModal()">+ Neuer Termin</button>
         </div>
 
         <div id="tab-appointments-list" style="padding: 0 20px 100px 20px;">
@@ -356,7 +340,7 @@
             </div>
             
             <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.27</strong></span>
+              <span style="font-size: 12px; color: var(--text-muted);">App Version: <strong class="app-version-display">v0.0.28</strong></span>
             </div>
           </div>
         </div>
@@ -377,7 +361,7 @@
         <span class="nav-badge" id="nav-adhoc-badge">2</span>
       </button>
       <button class="nav-item" data-tab="tab-appointments" onclick="switchTab('tab-appointments')">
-        <span class="nav-icon" style="font-size: 24px;">📅</span>
+        <span class="nav-icon">📅</span>
         <span class="nav-label">Termine</span>
       </button>
 
@@ -385,10 +369,7 @@
         <span class="nav-icon">✨</span>
         <span class="nav-label">Wünsche</span>
       </button>
-      <button class="nav-item" data-tab="tab-calendar" onclick="switchTab('tab-calendar')">
-        <span class="nav-icon">🏆</span>
-        <span class="nav-label">Hobbys</span>
-      </button>
+      
       <button class="nav-item" data-tab="tab-friends" onclick="switchTab('tab-friends')">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">Optionen</span>
@@ -430,6 +411,12 @@
             </select>
           </div>
         </div>
+            <div class="form-group">
+              <label class="checkbox-label" style="background:var(--primary-light); padding:10px; border-radius:var(--radius-md);">
+                <input type="checkbox" id="appt-recurring">
+                🔁 Wöchentlich wiederholen (nächste 12 Wochen)
+              </label>
+            </div>
 
         <div class="form-group">
           <label>Alter (Jahre)</label>
@@ -809,7 +796,7 @@
   <!-- Initialize Supabase Client -->
   <script src="supabaseClient.js"></script>
   
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=28"></script>
   <script>
     // KILL PWA CACHE AND SERVICE WORKERS TO FIX BROKEN STATE
     if ('serviceWorker' in navigator) {
@@ -821,7 +808,7 @@
     }
     // Update Version UI inline
     const versionDisplays = document.querySelectorAll('.app-version-display');
-    versionDisplays.forEach(el => el.textContent = "v0.0.27");
+    versionDisplays.forEach(el => el.textContent = "v0.0.28");
   </script>
 
     <!-- New Appointment Modal -->
